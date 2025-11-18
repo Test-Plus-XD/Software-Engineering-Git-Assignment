@@ -50,7 +50,7 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-/// GET /api/images - Retrieve all images with their labels
+/// GET /API/images - Retrieve all images with their labels
 router.get('/', async (request, response) => {
     try {
         // This query uses LEFT JOIN to get images even if they have no labels
@@ -87,7 +87,7 @@ router.get('/', async (request, response) => {
     }
 });
 
-/// GET /api/images/:id - Retrieve a single image with its labels
+/// GET /API/images/:id - Retrieve a single image with its labels
 router.get('/:id', async (request, response) => {
     try {
         const imageId = parseInt(request.params.id);
@@ -125,7 +125,7 @@ router.get('/:id', async (request, response) => {
     }
 });
 
-/// POST /api/images - Upload a new image
+/// POST /API/images - Upload a new image
 router.post('/', upload.single('image'), async (request, response) => {
     try {
         if (!request.file) {
@@ -159,7 +159,7 @@ router.post('/', upload.single('image'), async (request, response) => {
     }
 });
 
-/// POST /api/images/:id/labels - Add a label to an image
+/// POST /API/images/:id/labels - Add a label to an image
 router.post('/:id/labels', async (request, response) => {
     try {
         const imageId = parseInt(request.params.id);
@@ -211,7 +211,7 @@ router.post('/:id/labels', async (request, response) => {
     }
 });
 
-/// DELETE /api/images/:id - Delete an image and its annotations
+/// DELETE /API/images/:id - Delete an image and its annotations
 router.delete('/:id', async (request, response) => {
     try {
         const imageId = parseInt(request.params.id);

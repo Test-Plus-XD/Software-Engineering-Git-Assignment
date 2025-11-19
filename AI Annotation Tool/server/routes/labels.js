@@ -50,10 +50,10 @@ router.get('/', async (request, response) => {
 /// Returns detailed information about the label including all images it's applied to
 router.get('/:id', async (request, response) => {
     try {
-        const labelId = parseInt(request.params.id);
+        const labelId = Number.parseInt(request.params.id);
         console.log(`[GET] /API/labels/${labelId} - Fetching label details`);
 
-        if (isNaN(labelId)) {
+        if (Number.isNaN(labelId)) {
             return response.status(400).json({ error: 'Invalid label ID' });
         }
 
@@ -141,11 +141,11 @@ router.post('/', async (request, response) => {
 /// Note: Changing the label name affects all images that use this label
 router.put('/:id', async (request, response) => {
     try {
-        const labelId = parseInt(request.params.id);
+        const labelId = Number.parseInt(request.params.id);
         const { labelName, labelDescription } = request.body;
         console.log(`[PUT] /API/labels/${labelId} - Updating label`);
 
-        if (isNaN(labelId)) {
+        if (Number.isNaN(labelId)) {
             return response.status(400).json({ error: 'Invalid label ID' });
         }
 
@@ -188,10 +188,10 @@ router.put('/:id', async (request, response) => {
 /// Use with caution as this affects multiple images
 router.delete('/:id', async (request, response) => {
     try {
-        const labelId = parseInt(request.params.id);
+        const labelId = Number.parseInt(request.params.id);
         console.log(`[DELETE] /API/labels/${labelId} - Deleting label`);
 
-        if (isNaN(labelId)) {
+        if (Number.isNaN(labelId)) {
             return response.status(400).json({ error: 'Invalid label ID' });
         }
 

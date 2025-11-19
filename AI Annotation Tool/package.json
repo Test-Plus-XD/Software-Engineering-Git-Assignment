@@ -26,7 +26,7 @@
     "seed-db": "node scripts/seed-database.js",
     "test": "mocha tests/**/*.test.js --timeout 5000",
     "test:unit": "mocha tests/unit/**/*.test.js",
-    "test:load": "node tests/load/api.load.js"
+    "test:load": "node tests/load/API.load.js"
   },
   "keywords": [],
   "author": "",

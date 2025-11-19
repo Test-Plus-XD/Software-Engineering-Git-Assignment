@@ -90,9 +90,9 @@ router.get('/', async (request, response) => {
 /// GET /API/images/:id - Retrieve a single image with its labels
 router.get('/:id', async (request, response) => {
     try {
-        const imageId = parseInt(request.params.id);
+        const imageId = Number.parseInt(request.params.id);
 
-        if (isNaN(imageId)) {
+        if (Number.isNaN(imageId)) {
             return response.status(400).json({ error: 'Invalid image ID' });
         }
 
@@ -143,7 +143,7 @@ router.post('/', upload.single('image'), async (request, response) => {
         const result = await executeModification(insertQuery, [
             file.filename,
             file.originalname,
-            file.path,
+            path.posix.join('uploads/images', file.filename), // Build a web-friendly relative path (always forward slashes)
             file.size,
             file.mimetype
         ]);
@@ -162,10 +162,10 @@ router.post('/', upload.single('image'), async (request, response) => {
 /// POST /API/images/:id/labels - Add a label to an image
 router.post('/:id/labels', async (request, response) => {
     try {
-        const imageId = parseInt(request.params.id);
+        const imageId = Number.parseInt(request.params.id);
         const { labelName, confidence = 1.0 } = request.body;
 
-        if (isNaN(imageId)) {
+        if (Number.isNaN(imageId)) {
             return response.status(400).json({ error: 'Invalid image ID' });
         }
 
@@ -214,9 +214,9 @@ router.post('/:id/labels', async (request, response) => {
 /// DELETE /API/images/:id - Delete an image and its annotations
 router.delete('/:id', async (request, response) => {
     try {
-        const imageId = parseInt(request.params.id);
+        const imageId = Number.parseInt(request.params.id);
 
-        if (isNaN(imageId)) {
+        if (Number.isNaN(imageId)) {
             return response.status(400).json({ error: 'Invalid image ID' });
         }
 

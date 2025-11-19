@@ -189,37 +189,35 @@ function createImageCard(image) {
     card.className = 'bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow';
 
     // Format file size for display
-    const fileSizeKb = (image.fileSize / 1024).toFixed(2);
+    const fileSizeKb = (image.file_size / 1024).toFixed(2);
 
-    // Create labels HTML
-    const labelsHtml = image.labels.map(label =>
+    // Create labels HTML - image.labels is already an array of strings from the API
+    const labelsHtml = image.labels.map(labelName =>
         `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">
-      ${label.labelName}
-      <button onclick="removeLabel(${image.imageId}, ${label.labelId})" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-    </span>`
+            ${labelName}
+        </span>`
     ).join('');
 
     card.innerHTML = `
-    <img src="${image.filePath}" alt="${image.originalName}" class="w-full h-48 object-cover" />
-    <div class="p-4">
-      <h3 class="font-semibold text-gray-900 truncate mb-2">${image.originalName}</h3>
-      <p class="text-sm text-gray-600 mb-3">${fileSizeKb} KB • ${new Date(image.uploadedAt).toLocaleDateString()}</p>
-      
-      <div class="mb-3 min-h-[2rem]">
-        ${labelsHtml || '<span class="text-sm text-gray-400 italic">No labels yet</span>'}
-      </div>
-      
-      <div class="flex space-x-2">
-        <button onclick="showLabelModal(${image.imageId})" class="flex-1 bg-blue-500 text-white text-sm py-2 px-3 rounded hover:bg-blue-600 transition-colors">
-          Add Label
-        </button>
-        <button onclick="deleteImage(${image.imageId})" class="flex-1 bg-red-500 text-white text-sm py-2 px-3 rounded hover:bg-red-600 transition-colors">
-          Delete
-        </button>
-      </div>
-    </div>
-  `;
-
+        <img src="${image.file_path}" alt="${image.original_name}" class="w-full h-48 object-cover" />
+        <div class="p-4">
+            <h3 class="font-semibold text-gray-900 truncate mb-2">${image.original_name}</h3>
+            <p class="text-sm text-gray-600 mb-3">${fileSizeKb} KB • ${new Date(image.uploaded_at).toLocaleDateString()}</p>
+            
+            <div class="mb-3 min-h-[2rem]">
+                ${labelsHtml || '<span class="text-sm text-gray-400 italic">No labels yet</span>'}
+            </div>
+            
+            <div class="flex space-x-2">
+                <button onclick="showLabelModal(${image.image_id})" class="flex-1 bg-blue-500 text-white text-sm py-2 px-3 rounded hover:bg-blue-600 transition-colors">
+                    Add Label
+                </button>
+                <button onclick="deleteImage(${image.image_id})" class="flex-1 bg-red-500 text-white text-sm py-2 px-3 rounded hover:bg-red-600 transition-colors">
+                    Delete
+                </button>
+            </div>
+        </div>
+    `;
     return card;
 }
 

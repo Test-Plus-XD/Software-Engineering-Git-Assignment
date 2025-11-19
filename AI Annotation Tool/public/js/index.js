@@ -3,7 +3,7 @@
 /// and dynamic DOM manipulation to create a responsive user interface
 
 // API base URL for all backend requests
-const apiBaseUrl = 'http://localhost:3000/api';
+const apiBaseUrl = 'http://localhost:3000/API';
 const sqliteEndpoint = 'http://localhost:3000/SQLite/Images';
 
 // Global state to track currently loaded images

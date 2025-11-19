@@ -49,7 +49,7 @@ application.use('/API/labels', labelRoutes);
 application.get('/SQLite/Images', async (request, response) => {
     try {
         // Import the database query function
-        const { executeQuery } = await import('./database/db.js');
+        const { executeQuery } = await import('./database.js');
 
         // Get basic statistics about the database
         const imageCount = await executeQuery('SELECT COUNT(*) as count FROM images');

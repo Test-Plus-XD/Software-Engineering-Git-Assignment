@@ -1,5 +1,5 @@
 import express from 'express';
-import { executeQuery, executeModification, getSingleRow } from '../database/db.js';
+import { executeQuery, executeModification, getSingleRow } from '../database.js';
 
 /// Express router for handling all label-related API endpoints
 /// Labels are reusable tags that can be applied to multiple images

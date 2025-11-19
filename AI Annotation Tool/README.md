@@ -25,22 +25,23 @@ The AI Dataset Annotation Tool is a web application that allows users to upload 
 ### Frontend
 
 - **HTML5**: Semantic markup and structure
-- **CSS3**: Responsive design with Grid/Flexbox
+- **TailwindCSS (CDN)**: Utility-first CSS framework
 - **JavaScript (ES6+)**: Modern JavaScript features and AJAX
 - **Fetch API**: Asynchronous server communication
 
 ### Backend
 
 - **Node.js**: JavaScript runtime environment
-- **Express.js**: Web application framework
-- **SQLite3**: Lightweight database
+- **Express.js 5.1.0**: Web application framework
+- **SQLite3 5.1.7**: Lightweight relational database
+- **Multer 1.4.5**: Middleware for handling file uploads
 - **Raw SQL**: Database queries without ORM
 
 ### Development Tools
 
 - **Git**: Version control
-- **GitHub/GitLab**: Repository hosting
-- **VS Code**: Code editor (recommended)
+- **GitHub**: Repository hosting
+- **Visual Studio 2026 Insider**: Code editor
 
 ## Installation and Setup
 
@@ -55,8 +56,8 @@ The AI Dataset Annotation Tool is a web application that allows users to upload 
 1. **Clone the repository**
 
    ```bash
-   git clone [your-repository-url]
-   cd ai-dataset-annotation-tool
+   git clone https://github.com/Test-Plus-XD/Software-Engineering-Git-Assignment.git
+   cd "AI Annotation Tool"
    ```
 
 2. **Install dependencies**
@@ -65,72 +66,64 @@ The AI Dataset Annotation Tool is a web application that allows users to upload 
    npm install
    ```
 
-3. **Initialize the database**
-
-   ```bash
-   npm run init-db
-   ```
-
-4. **Start the application**
-
-   ```bash
-   npm start
-   ```
-
-5. **Access the application**
-   - Open your browser and go to `http://localhost:3000`
-
-### Alternative Setup (Manual)
-
-1. **Install Node.js dependencies**
-
-   ```bash
-   npm install express sqlite3 cors
-   ```
-
-2. **Create database tables**
+3. **Initialise the database**
 
    ```bash
    sqlite3 database/annotations.db < database/schema.sql
    ```
 
-3. **Insert sample data**
+4. **Seed sample data (optional)**
 
    ```bash
-   sqlite3 database/annotations.db < database/sample-data.sql
+   npm run seed-db
+   ```
+    Or manually:
+   ```bash
+   sqlite3 database/annotations.db < database/seed.sql
    ```
 
-4. **Run the server**
+5. **Start the application**
+
    ```bash
-   node server/server.js
+   npm start
    ```
+
+6. **Access the application**
+   - Open your browser and go to `http://localhost:3000`
 
 ## Project Structure
 
 ```
-ai-dataset-annotation-tool/
+AI Annotation Tool/
 ├── public/                 # Frontend files
 │   ├── css/
-│   │   └── styles.css     # Main stylesheet
+│   │   └── styles.css     # Custom CSS styles
 │   ├── js/
-│   │   └── app.js         # Main JavaScript file
-│   └── index.html         # Main HTML file
+│   │   └── index.js       # Frontend JavaScript with AJAX
+│   └── index.html         # Main HTML interface
 ├── server/                # Backend files
 │   ├── routes/
-│   │   └── images.js      # Image API routes
-│   ├── models/
-│   │   └── database.js    # Database connection and queries
+│   │   ├── images.js      # Image API endpoints
+│   │   └── labels.js      # Label API endpoints
+│   ├── database.js        # Database connection and queries
 │   └── server.js          # Express server setup
 ├── database/              # Database files
-│   ├── annotations.db    # SQLite database file
-│   ├── schema.sql        # Database schema
-│   └── sample-data.sql   # Sample data
+│   ├── annotations.db     # SQLite database file (created on init)
+│   ├── schema.sql         # Database schema definition
+│   └── seed.sql           # Sample data
+├── scripts/               # Utility scripts
+│   ├── init-database.js   # Database initialisation
+│   └── seed-database.js   # Sample data seeding
+├── uploads/               # Uploaded image storage
+│   └── images/
+├── tests/                 # Test files (for Assignment 2)
+│   ├── database.test.js
+│   └── server_load.test.js
 ├── docs/                  # Documentation
-│   ├── AI_Usage_Declaration.md
-│   └── Group_Collaboration_Log.md
-├── package.json          # Node.js dependencies
-├── README.md             # This file
-└── .gitignore           # Git ignore rules
+│   └── AI_Usage_Declaration.md
+├── package.json           # Node.js dependencies
+└── README.md             # This file
+└ .gitignore            # Git ignore rules
 ```
 
 ## API Documentation
@@ -226,148 +219,148 @@ GET /API/images/search?label=cat&confidence=0.8
 
 ### Tables
 
-#### Users Table
+#### Images Table
 
 ```sql
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+CREATE TABLE images (
+    image_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL UNIQUE,
+    original_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    mime_type TEXT NOT NULL,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Labels Table
+
+```sql
+CREATE TABLE labels (
+    label_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    label_name TEXT NOT NULL UNIQUE,
+    label_description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-#### Categories Table
+#### Annotations Table (Junction Table)
 
 ```sql
-CREATE TABLE categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(50) NOT NULL,
-    color VARCHAR(7) DEFAULT '#007bff',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-#### Tasks Table
-
-```sql
-CREATE TABLE tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title VARCHAR(200) NOT NULL,
-    description TEXT,
-    status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
-    priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
-    due_date DATETIME,
-    user_id INTEGER,
-    category_id INTEGER,
+CREATE TABLE annotations (
+    annotation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    image_id INTEGER NOT NULL,
+    label_id INTEGER NOT NULL,
+    confidence REAL DEFAULT 1.0 CHECK(confidence >= 0.0 AND confidence <= 1.0),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (category_id) REFERENCES categories(id)
+    FOREIGN KEY (image_id) REFERENCES images(image_id) ON DELETE CASCADE,
+    FOREIGN KEY (label_id) REFERENCES labels(label_id) ON DELETE CASCADE,
+    UNIQUE(image_id, label_id)
 );
 ```
+
+**Relationships:**
+- Images → Annotations (one-to-many)
+- Labels → Annotations (one-to-many)
+- Images ↔ Labels (many-to-many via annotations)
 
 ## Individual Contributions
 
 ### [NG Yu Ham Baldwin] - [S24510598]
 
 **Primary Responsibilities:**
-
-- [List your main areas of responsibility]
+- Full-stack development of the AI Dataset Annotation Tool
+- Database schema design and implementation
+- RESTful API development with Express.js
+- Frontend interface design with TailwindCSS
+- AJAX integration for asynchronous operations
+- Project setup
 
 **Code Contributions:**
-
-- [List specific files or features you implemented]
-
-**Git Commits:**
-
-- [List your significant commits]
+- `server/server.js` - Express server configuration and middleware setup
+- `server/database.js` - SQLite database connection and query wrappers
+- `server/routes/images.js` - Image upload, retrieval, labelling, and deletion endpoints
+- `server/routes/labels.js` - Label CRUD operations
+- `public/index.html` - Frontend HTML structure
+- `public/js/index.js` - Frontend JavaScript with AJAX functionality
+- `database/schema.sql` - Database schema definition
+- `database/seed.sql` - Sample data for testing
+- `scripts/init-database.js` - Database initialisation script
+- `scripts/seed-database.js` - Data seeding script
 
 **Challenges Faced:**
-
-- [Describe any difficulties you encountered]
+- Understanding SQLite's callback-based API and converting it to Promises for cleaner async/await syntax
+- Implementing proper file upload handling with Multer middleware
 
 **Learning Outcomes:**
-
-- [What did you learn from this assignment?]
+- Understood the differences between file-based (SQLite) and server-based databases
+- Learned how to implement RESTful API endpoints following HTTP conventions
 
 ### Development Process
 
-## Day 1: Core Structure and Backend Foundations
-- [✔️] Create project directories and placeholder files  
-- [✔️] Add SQLite node package  
-- [✔️] Implement database schema and initial setup  
-- [✔️] Add script to connect to database and create the **images** table  
-- [✔️] Configure API server (Express)  
-- [✔️] Improve database connector for better logging  
-- [✔️] Add API route to access labels  
-- [✔️] Add index for database schema  
-- [✔️] Insert 5 sample records and images  
-- [✔️] Add basic webpage structure for the app interface  
+### Day 1: Core Structure and Backend Foundations
+- ✅ Create project directories and placeholder files
+- ✅ Add SQLite node package
+- ✅ Implement database schema and initial setup
+- ✅ Configure API server (Express)
+- ✅ Add database connection with error logging
+- ✅ Create images and labels tables
+- ✅ Add indices for query optimisation
 
-## Day 2: Package Setup, Data Import, API Expansion, Frontend Enhancements
-- [✔️] Add API route to access labels  
-- [✔️] Add index for database schema  
-- [✔️] Insert 5 sample records and images  
-- [✔️] Add basic webpage structure for the app interface  
-- [✔️] Update npm for server  
-- [✔️] Update Node.js packages and file names  
-- [✔️] Add custom npm commands  
-- [✔️] Import sample data into SQLite  
-- [✔️] Add JavaScript functions for webpage  
-- [✔️] Update database seed and script  
-- [✔️] Add API endpoint for webpage  
-- [✔️] Refine webpage JS (camelCase fix)  
-- [✔️] Polish index page with TailwindCSS  
-- [✔️] Fix minor naming issues  
-- [✔️] Add tests for assignment 2  
+### Day 2: Data Import, API Expansion, Frontend Development
+- ✅ Implement image upload route with Multer
+- ✅ Add label management endpoints
+- ✅ Insert sample data for testing
+- ✅ Create HTML structure with TailwindCSS
+- ✅ Implement JavaScript AJAX functions
+- ✅ Add image gallery with dynamic rendering
+- ✅ Implement label modal functionality
+- ✅ Add database statistics display
+- ✅ Test all CRUD operations
 
-## Day 3: Final Review and Submission
-- [ ] Frontend–backend integration  
-- [ ] Testing and debugging  
-- [ ] Code review and optimisation  
-- [ ] Documentation drafting  
-- [ ] - [ ] Final testing  
-- [ ] Code cleanup  
-- [ ] Documentation review  
-- [ ] Submission preparation 
+### Day 3: Final Review and Submission
+- ✅ Frontend-backend integration testing
+- ✅ Bug fixes and code refinement
+- ✅ Code cleanup and commenting
+- ✅ Documentation completion
+- ✅ Final testing across different scenarios
+- ✅ Submission preparation
 
 ## Testing
 
 ### Manual Testing Checklist
 
-- [ ] All CRUD operations work correctly
-- [ ] AJAX calls handle errors gracefully
-- [ ] Form validation works on client side
-- [ ] Responsive design works on different screen sizes
-- [ ] Database operations are secure (no SQL injection)
-- [ ] Error messages are user-friendly
+- ✅ Image upload works with various file types
+- ✅ Labels can be added to and removed from images
+- ✅ Database statistics update in real-time
+- ✅ AJAX calls handle errors
+- ✅ Responsive design works desktop
+- ✅ User-friendly error messages display correctly
 
 ### Test Data
 
 The application includes sample data with:
-
-- 3 users (admin, user1, user2)
-- 3 categories (Work, Personal, Study)
-- 10+ sample tasks with different statuses and priorities
+- 13 predefined labels (cat, dog, food, etc.)
+- 5 sample image records
+- 15 sample annotations linking images to labels
 
 ## Known Issues and Limitations
 
 1. **Authentication**: No user authentication system implemented
-2. **File Uploads**: No file attachment feature for tasks
-3. **Real-time Updates**: No WebSocket implementation for live updates
-4. **Advanced Search**: Limited search functionality
-5. **Mobile App**: No native mobile application
+2. **Label Editing**: Cannot edit labels directly from image cards (must use API)
+3. **Bulk Operations**: No batch upload or batch labelling functionality
+4. **Search Functionality**: Limited search and filtering options
+5. **Image Preview**: Placeholder images in seed data don't have actual files
 
 ## Future Enhancements
 
-1. **User Authentication**: Implement login/logout system
-2. **File Attachments**: Allow file uploads for tasks
-3. **Real-time Collaboration**: Add WebSocket support
-4. **Advanced Filtering**: More sophisticated search and filter options
-5. **Mobile App**: Develop React Native or Flutter app
-6. **API Rate Limiting**: Implement rate limiting for API endpoints
-7. **Data Export**: Add CSV/PDF export functionality
+1. **Advanced Search**: Add filtering by label, date, and file type
+2. **Batch Operations**: Allow multiple image uploads and bulk labelling
+3. **Label Management UI**: Add frontend interface for editing labels
+4. **Image Editing**: Basic image cropping and rotation tools
+5. **Export Functionality**: Export annotated dataset in common formats (JSON, CSV)
+6. **Statistics Dashboard**: More detailed analytics on dataset composition
 
 ## Resources and References
 
@@ -377,23 +370,25 @@ The application includes sample data with:
 - [SQLite Documentation](https://www.sqlite.org/docs.html)
 - [MDN Web Docs](https://developer.mozilla.org/)
 - [Git Documentation](https://git-scm.com/doc)
+- [TailwindCSS Documentation](https://tailwindcss.com/)
+- [Multer Documentation](https://github.com/expressjs/multer)
 
 ### Tutorials Used
 
-- [List any online tutorials or resources you used]
+- None directly; all code was generated with AI assistance and adapted by the me.
 
 ### AI Tools Used
 
-- **Tool 1:** [Claude]
-- **Tool 2:** [ChatGPT]
-- **Tool 3:** [GitHub Copilot]
+- **Claude (Anthropic)**: Code structure, debugging assistance, documentation
+- **ChatGPT**: Conceptual explanations and alternative approaches
+- **GitHub Copilot**: Code completion and boilerplate generation
 
 ## Group Collaboration
 
 ### Git Workflow
 
-- **Branching Strategy**: [main branch]
-- **Commit Convention**: [Conventional commits]
+- **Branching Strategy**: main branch
+- **Commit Convention**: Descriptive commit messages explaining changes
 - **Pull Request Process**: [No PR process]
 
 ## Academic Integrity

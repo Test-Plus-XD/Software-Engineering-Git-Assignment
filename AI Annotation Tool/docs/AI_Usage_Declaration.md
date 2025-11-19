@@ -26,16 +26,17 @@ If yes, please provide a brief summary of your AI usage:
 
 ### AI Tools Used
 
-- **Tool 1:** [Claude]
-- **Tool 2:** [ChatGPT]
-- **Tool 3:** [GitHub Copilot]
+1. **Claude (Anthropic)** - Primary AI assistant for code generation and learning
+2. **ChatGPT (OpenAI)** - Secondary reference for debugging and concept clarification
+3. **GitHub Copilot** - Code completion and IntelliSense
 
 ### Summary of AI Assistance
 
 **What did you use AI for?** (e.g., debugging, learning concepts, generating boilerplate code, code review)
 
 ```
-[Provide a brief summary of how you used AI tools in your project development]
+[I used AI tools extensively throughout the development process.
+These tools assisted with learning concepts, generating code, debugging errors, modifying documentation, and applying best practices.]
 ```
 
 **What percentage of your code was AI-generated?**
@@ -49,21 +50,51 @@ If yes, please provide a brief summary of your AI usage:
 **How did you modify and integrate AI-generated code?**
 
 ```
-[Briefly explain how you adapted AI-generated content to fit your project]
+[I adapted AI suggestions to align with my preferences and existing conventions. 
+This included reorganising the file structure, adjusting API endpoint paths, modifying variable naming, correcting file path handling, refining frontend integration, enhancing error messages, and simplifying import statements.]
 ```
 
 **Understanding Check:**
 **Can you explain how the AI-generated code works?** (e.g., what each function does, how the logic flows, what the key concepts are)
 
 ```
-[Provide a brief explanation of how the AI-generated code works and why you chose to use it]
+[The `database.js` establishes a SQLite connection with schema from `schema.sql` then wraps callback-based operations in Promises for async/await compatibility.
+It uses `executeQuery()` for SELECT and `executeModification()` for INSERT/UPDATE/DELETE.
+
+The `server.js`, `images.js` and `labels.js` are RESTful endpoints, `server.js` is the API and the others are routers.
+They use `multer` middleware to intercept file uploads before the route handler runs.
+They have functions with parameterised queries to call database.
+Uses JOIN queries to combine data and CASCADE DELETE to remove related annotations when an image or label is deleted.
+Images and labels have a many-to-many relationship and `annotations` table is a junction table that links them.
+
+Frontend page is `index.html` and `index.js` fetches data from backend endpoints and displays images with their labels.
+It uses Fetch API to make HTTP requests to the backend.
+It handles responses with `.then()` chains or async/await, and updates the DOM with `document.getElementById()` and `createElement()` to show images and labels.
+It also updates the UI dynamically when new images or labels are added or deleted. (AJAX pattern)]
 ```
 
 **Modification Evidence:**
 **What changes did you make to the AI-generated code?** (e.g., variable names, logic adjustments, integration with your existing code)
 
 ```
-[Briefly describe the specific modifications you made to adapt the AI code to your project]
+[Changed all `/api/` routes to `/API/` to maintain consistency with my other project (Pour Rice restaurant app).
+Changed some function parameters to match my coding style (e.g., `req/res` → `request/response`).
+
+Modified the image upload route to store web-friendly relative paths:
+   (images.js)
+   // AI suggested:
+   file.path
+   // I changed to:
+   path.posix.join('uploads/images', file.filename)
+
+   Simplified the label display logic because my API returns label names as strings, not objects:
+   (index.js)
+   // AI suggested:
+   image.labels.map(label => label.labelName)
+   
+   // I changed to:
+   image.labels.map(labelName => labelName)
+]
 ```
 
 ---
@@ -76,25 +107,32 @@ https://inloop.github.io/sqlite-viewer/ - For checking and validating SQLite dat
 
 **Group Discussion Contributions:**
 
+This is an individual project (Group of 1), so no group discussions occurred.
 
 ## Learning Reflection
 
 **What did you learn from using AI tools?**
 
 ```
-[Reflect on how AI tools helped you understand concepts or solve problems]
+[I learned how the evolution from callbacks → Promises → async/await and why I need these patterns for I/O operations.
+I also learned the evolution from callbacks → Promises → async/await and why we need these patterns for I/O operations.]
 ```
 
 **What challenges did you face when integrating AI-generated code?**
 
 ```
-[Describe any difficulties you encountered and how you overcame them]
+[AI used OS-specific path separators (`\` on Windows) but web URLs need forward slashes. Fixed by using `path.posix.join()`.
+AI's schema initialisation ran asynchronously, causing race conditions. And I fixed it by using `sqlite3` command manually.
+I also had to manually fix all import statements after reorganising file structure.]
 ```
 
 **How did you ensure the final code was your own work?**
 
 ```
-[Explain your process for understanding and modifying AI-generated content]
+[I tested every endpoint multiple times with different scenarios.
+I forced myself to understand each line of code by reading comments AI generated and Googled concepts I was unfamiliar with.
+I connected all the pieces myself, ensuring the frontend wire to the backend, vice versa.
+]
 ```
 
 ## Declaration of Originality
@@ -105,7 +143,7 @@ I declare that:
 - [✔️] All AI-generated code has been modified and integrated by me
 - [✔️] I understand the concepts and can explain the code I submitted
 - [✔️] The final submission represents my own understanding and implementation
-- [ ] I have not copied code directly from AI tools without modification
+- [ ] I have not copied code directly from AI tools without modification (Only the CSS is copied directly)
 - [✔️] I have not used AI tools to generate the entire assignment
 
 **Student Signature:** [NG Yu Ham Baldwin]  

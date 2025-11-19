@@ -9,13 +9,13 @@ const currentDirectory = dirname(currentFileUrl);
 
 // Construct the path to the SQLite database file
 // This creates the database in the database directory at the project root
-const databasePath = join(currentDirectory, '../../database/annotations.db');
-const schemaPath = join(currentDirectory, '../../database/schema.sql');
+const databasePath = join(currentDirectory, '../database/annotations.db');
+const schemaPath = join(currentDirectory, '../database/schema.sql');
 
 /// Initialises and returns a connection to the SQLite database
 /// Uses verbose mode to provide detailed error messages during development
 /// The database file will be created automatically if it doesn't exist
-const database = new sqlite3.verbose().Database(databasePath, async (error) => {
+const database = new(sqlite3.verbose().Database)(databasePath, (error) => {
     if (error) {
         console.error('Failed to connect to SQLite database:', error.message);
         throw error;
@@ -24,7 +24,7 @@ const database = new sqlite3.verbose().Database(databasePath, async (error) => {
     console.log(`   Database location: ${databasePath}`);
 
     // Initialise the database schema if tables don't exist
-    await initialiseSchema();
+    initialiseSchema();
 });
 
 /// Initialises the database schema by reading and executing the schema.sql file

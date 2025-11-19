@@ -232,12 +232,11 @@ router.delete('/:id', async (request, response) => {
 
         // Delete physical file
         try {
-            await fs.unlink(images[0].file_path);
+            await fs.unlink(path.join(currentDirectory, '../../', images[0].file_path));
         } catch (fileError) {
             console.error('Error deleting file:', fileError);
             // Continue even if file deletion fails
         }
-
         response.status(204).send();
     } catch (error) {
         console.error('Error deleting image:', error);

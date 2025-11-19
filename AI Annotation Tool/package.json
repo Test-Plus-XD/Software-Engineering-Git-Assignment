@@ -10,5 +10,26 @@
     "mocha": "^10.8.2",
     "chai": "^5.1.2",
     "autocannon": "^7.15.0"
-  }
+  },
+  "name": "ai-annotation-tool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "init-db": "node scripts/init-database.js",
+    "seed-db": "node scripts/seed-database.js",
+    "test": "mocha tests/**/*.test.js --timeout 5000",
+    "test:unit": "mocha tests/unit/**/*.test.js",
+    "test:load": "node tests/load/api.load.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module"
 }

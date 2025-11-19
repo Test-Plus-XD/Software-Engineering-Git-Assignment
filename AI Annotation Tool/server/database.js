@@ -21,7 +21,7 @@ const database = new(sqlite3.verbose().Database)(databasePath, (error) => {
         throw error;
     }
     console.log('✅ Successfully connected to SQLite database');
-    console.log(`   Database location: ${databasePath}`);
+    console.log(`   Database location: ${databasePath}`, 'cwd:', process.cwd());
 
     // Initialise the database schema if tables don't exist
     initialiseSchema();

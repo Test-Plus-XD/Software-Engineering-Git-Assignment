@@ -145,27 +145,123 @@ GET /API/images
 **Response:**
 
 ```json
-[
-  {
-    "id": 1,
-    "filename": "cat_001.jpg",
-    "original_name": "my_cat.jpg",
-    "file_path": "/uploads/images/cat_001.jpg",
-    "file_size": 245760,
-    "mime_type": "image/jpeg",
-    "uploaded_at": "2025-10-14T10:00:00Z",
-    "labels": [
-      { "id": 1, "name": "cat", "confidence": 1.0 },
-      { "id": 2, "name": "animal", "confidence": 1.0 }
-    ]
-  }
-]
+{
+  "count": 5,
+  "data": [
+    {
+      "image_id": 1,
+      "filename": "sample-cat-001.jpg",
+      "original_name": "my_cat.jpg",
+      "file_path": "uploads/images/sample-cat-001.jpg",
+      "file_size": 245760,
+      "mime_type": "image/jpeg",
+      "uploaded_at": "2025-11-19 09:32:35",
+      "label_names": "cat,animal,indoor",
+      "labels": [
+        "cat",
+        "animal",
+        "indoor"
+      ]
+    },
+    {
+      "image_id": 2,
+      "filename": "sample-dog-001.jpg",
+      "original_name": "golden_retriever.jpg",
+      "file_path": "uploads/images/sample-dog-001.jpg",
+      "file_size": 312450,
+      "mime_type": "image/jpeg",
+      "uploaded_at": "2025-11-19 09:32:35",
+      "label_names": "dog,animal,outdoor",
+      "labels": [
+        "dog",
+        "animal",
+        "outdoor"
+      ]
+    },
+    {
+      "image_id": 3,
+      "filename": "sample-landscape-001.jpg",
+      "original_name": "mountain_view.jpg",
+      "file_path": "uploads/images/sample-landscape-001.jpg",
+      "file_size": 456789,
+      "mime_type": "image/jpeg",
+      "uploaded_at": "2025-11-19 09:32:35",
+      "label_names": "nature,outdoor,landscape",
+      "labels": [
+        "nature",
+        "outdoor",
+        "landscape"
+      ]
+    },
+    {
+      "image_id": 4,
+      "filename": "sample-person-001.jpg",
+      "original_name": "portrait_photo.jpg",
+      "file_path": "uploads/images/sample-person-001.jpg",
+      "file_size": 198765,
+      "mime_type": "image/jpeg",
+      "uploaded_at": "2025-11-19 09:32:35",
+      "label_names": "person,indoor,portrait",
+      "labels": [
+        "person",
+        "indoor",
+        "portrait"
+      ]
+    },
+    {
+      "image_id": 5,
+      "filename": "sample-food-001.jpg",
+      "original_name": "lunch_plate.jpg",
+      "file_path": "uploads/images/sample-food-001.jpg",
+      "file_size": 287654,
+      "mime_type": "image/jpeg",
+      "uploaded_at": "2025-11-19 09:32:35",
+      "label_names": "food,indoor",
+      "labels": [
+        "food",
+        "indoor"
+      ]
+    }
+  ]
+}
 ```
 
 #### Get Image by ID
 
 ```http
 GET /API/images/:id
+```
+
+**Response:**
+
+```json
+{
+  "image_id": 1,
+  "filename": "sample-cat-001.jpg",
+  "original_name": "my_cat.jpg",
+  "file_path": "uploads/images/sample-cat-001.jpg",
+  "file_size": 245760,
+  "mime_type": "image/jpeg",
+  "uploaded_at": "2025-11-19 09:32:35",
+  "updated_at": "2025-11-19 09:32:35",
+  "labels": [
+    {
+      "label_id": 1,
+      "label_name": "cat",
+      "confidence": 1
+    },
+    {
+      "label_id": 3,
+      "label_name": "animal",
+      "confidence": 0.95
+    },
+    {
+      "label_id": 10,
+      "label_name": "indoor",
+      "confidence": 0.8
+    }
+  ]
+}
 ```
 
 #### Upload New Image
@@ -408,5 +504,5 @@ This project was developed as part of the Software Engineering and Professional 
 
 ---
 
-**Last Updated**: [19/11/2025]
-**Version**: 1.0.0
+**Last Updated**: [20/11/2025]
+**Version**: 1.0.1

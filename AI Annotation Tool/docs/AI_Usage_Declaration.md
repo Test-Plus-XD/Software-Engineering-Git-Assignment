@@ -35,8 +35,8 @@ If yes, please provide a brief summary of your AI usage:
 **What did you use AI for?** (e.g., debugging, learning concepts, generating boilerplate code, code review)
 
 ```
-[I used AI tools extensively throughout the development process.
-These tools assisted with learning concepts, generating code, debugging errors, modifying documentation, and applying best practices.]
+I used AI tools extensively throughout the development process.
+These tools assisted with learning concepts, generating code, debugging errors, modifying documentation, and applying best practices.
 ```
 
 **What percentage of your code was AI-generated?**
@@ -50,15 +50,15 @@ These tools assisted with learning concepts, generating code, debugging errors, 
 **How did you modify and integrate AI-generated code?**
 
 ```
-[I adapted AI suggestions to align with my preferences and existing conventions. 
-This included reorganising the file structure, adjusting API endpoint paths, modifying variable naming, correcting file path handling, refining frontend integration, enhancing error messages, and simplifying import statements.]
+I adapted AI suggestions to align with my preferences and existing conventions. 
+This included reorganising the file structure, adjusting API endpoint paths, modifying variable naming, correcting file path handling, refining frontend integration, enhancing error messages, and simplifying import statements.
 ```
 
 **Understanding Check:**
 **Can you explain how the AI-generated code works?** (e.g., what each function does, how the logic flows, what the key concepts are)
 
 ```
-[The `database.js` establishes a SQLite connection with schema from `schema.sql` then wraps callback-based operations in Promises for async/await compatibility.
+The `database.js` establishes a SQLite connection with schema from `schema.sql` then wraps callback-based operations in Promises for async/await compatibility.
 It uses `executeQuery()` for SELECT and `executeModification()` for INSERT/UPDATE/DELETE.
 
 The `server.js`, `images.js` and `labels.js` are RESTful endpoints, `server.js` is the API and the others are routers.
@@ -70,14 +70,14 @@ Images and labels have a many-to-many relationship and `annotations` table is a 
 Frontend page is `index.html` and `index.js` fetches data from backend endpoints and displays images with their labels.
 It uses Fetch API to make HTTP requests to the backend.
 It handles responses with `.then()` chains or async/await, and updates the DOM with `document.getElementById()` and `createElement()` to show images and labels.
-It also updates the UI dynamically when new images or labels are added or deleted. (AJAX pattern)]
+It also updates the UI dynamically when new images or labels are added or deleted. (AJAX pattern)
 ```
 
 **Modification Evidence:**
 **What changes did you make to the AI-generated code?** (e.g., variable names, logic adjustments, integration with your existing code)
 
 ```
-[Changed all `/api/` routes to `/API/` to maintain consistency with my other project (Pour Rice restaurant app).
+Changed all `/api/` routes to `/API/` to maintain consistency with my other project (Pour Rice restaurant app).
 Changed some function parameters to match my coding style (e.g., `req/res` → `request/response`).
 
 Modified the image upload route to store web-friendly relative paths:
@@ -94,7 +94,6 @@ Modified the image upload route to store web-friendly relative paths:
    
    // I changed to:
    image.labels.map(labelName => labelName)
-]
 ```
 
 ---
@@ -114,25 +113,24 @@ This is an individual project (Group of 1), so no group discussions occurred.
 **What did you learn from using AI tools?**
 
 ```
-[I learned how the evolution from callbacks → Promises → async/await and why I need these patterns for I/O operations.
-I also learned the evolution from callbacks → Promises → async/await and why we need these patterns for I/O operations.]
+I learned how the evolution from callbacks → Promises → async/await and why I need these patterns for I/O operations.
+I also learned the evolution from callbacks → Promises → async/await and why we need these patterns for I/O operations.
 ```
 
 **What challenges did you face when integrating AI-generated code?**
 
 ```
-[AI used OS-specific path separators (`\` on Windows) but web URLs need forward slashes. Fixed by using `path.posix.join()`.
+AI used OS-specific path separators (`\` on Windows) but web URLs need forward slashes. Fixed by using `path.posix.join()`.
 AI's schema initialisation ran asynchronously, causing race conditions. And I fixed it by using `sqlite3` command manually.
-I also had to manually fix all import statements after reorganising file structure.]
+I also had to manually fix all import statements after reorganising file structure.
 ```
 
 **How did you ensure the final code was your own work?**
 
 ```
-[I tested every endpoint multiple times with different scenarios.
+I tested every endpoint multiple times with different scenarios.
 I forced myself to understand each line of code by reading comments AI generated and Googled concepts I was unfamiliar with.
 I connected all the pieces myself, ensuring the frontend wire to the backend, vice versa.
-]
 ```
 
 ## Declaration of Originality
@@ -147,7 +145,7 @@ I declare that:
 - [✔️] I have not used AI tools to generate the entire assignment
 
 **Student Signature:** [NG Yu Ham Baldwin]  
-**Date:** [19/11/2025]
+**Date:** [20/11/2025]
 
 ---
 

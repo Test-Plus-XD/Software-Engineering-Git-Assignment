@@ -1,54 +1,56 @@
 /**
  * API route for managing labels
- * Example usage of the database connection utility
+ * Uses data access layer for database operations
  */
 
-import { query, run } from '../../../lib/database/connection';
 import { NextResponse } from 'next/server';
+import { getAllLabels, createLabel } from '../../../lib/data-access/labels.js';
 
-// GET /api/labels - Get all labels
+// GET /api/labels - Get all labels with usage statistics
 export async function GET() {
   try {
-    const labels = await query(`
-      SELECT 
-        l.*,
-        COUNT(a.annotation_id) as usage_count
-      FROM labels l
-      LEFT JOIN annotations a ON l.label_id = a.label_id
-      GROUP BY l.label_id
-      ORDER BY l.label_name
-    `);
+    const labels = await getAllLabels();
 
-    return NextResponse.json(labels);
+    return NextResponse.json({
+      success: true,
+      data: labels
+    });
   } catch (error) {
     console.error('Error fetching labels:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch labels' },
+      { success: false, error: 'Failed to fetch labels', details: error.message },
       { status: 500 }
     );
   }
 }
 
-// POST /api/labels - Create a new label
+// POST /api/labels - Create a new label (with duplicate handling)
 export async function POST(request) {
   try {
     const { label_name, label_description } = await request.json();
 
-    const result = await run(
-      'INSERT INTO labels (label_name, label_description) VALUES (?, ?)',
-      [label_name, label_description]
-    );
+    // Validate label_name
+    if (!label_name || typeof label_name !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'label_name is required and must be a string' },
+        { status: 400 }
+      );
+    }
 
-    const newLabel = await query(
-      'SELECT * FROM labels WHERE label_id = ?',
-      [result.lastID]
-    );
+    // Create label using data access layer (handles duplicates gracefully)
+    const newLabel = await createLabel({
+      label_name,
+      label_description: label_description || null
+    });
 
-    return NextResponse.json(newLabel[0], { status: 201 });
+    return NextResponse.json({
+      success: true,
+      data: newLabel
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating label:', error);
     return NextResponse.json(
-      { error: 'Failed to create label' },
+      { success: false, error: 'Failed to create label', details: error.message },
       { status: 500 }
     );
   }

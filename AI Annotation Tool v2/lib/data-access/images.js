@@ -82,12 +82,12 @@ async function createImage(imageData) {
     
   } catch (error) {
     console.error('Error in createImage:', error);
-    
+
     // Handle unique constraint violations
-    if (error.message.includes('UNIQUE constraint failed')) {
-      throw new Error('An image with this filename already exists');
+    if (error.message.includes('UNIQUE constraint failed') || error.message.includes('unique')) {
+      throw new Error('Image with this filename already exists (unique constraint violation)');
     }
-    
+
     throw new Error(`Failed to create image: ${error.message}`);
   }
 }
@@ -109,7 +109,7 @@ async function updateImage(imageId, updateData) {
     }
     
     // Validate update data against schema (partial validation)
-    const validation = validateData('images', updateData);
+    const validation = validateData('images', updateData, { partial: true });
     if (!validation.valid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
     }

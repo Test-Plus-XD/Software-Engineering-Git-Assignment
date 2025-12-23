@@ -32,17 +32,17 @@ async function createLabel(labelData) {
   try {
     // Validate required fields
     if (!labelData.label_name || typeof labelData.label_name !== 'string') {
-      throw new Error('Field \'label_name\' is required and must be a string');
+      throw new Error('Label validation failed: Field \'label_name\' is required and must be a string');
     }
-    
+
     // Trim whitespace from label name
     const trimmedName = labelData.label_name.trim();
     if (trimmedName.length === 0) {
-      throw new Error('Label name cannot be empty or whitespace only');
+      throw new Error('Label validation failed: Label name cannot be empty or whitespace only');
     }
-    
+
     if (trimmedName.length > 100) {
-      throw new Error('Label name cannot exceed 100 characters');
+      throw new Error('Label validation failed: Label name cannot exceed 100 characters');
     }
     
     const processedData = {
@@ -98,7 +98,7 @@ async function updateLabel(labelId, updateData) {
     }
     
     // Validate update data against schema (partial validation)
-    const validation = validateData('labels', updateData);
+    const validation = validateData('labels', updateData, { partial: true });
     if (!validation.valid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
     }
@@ -120,12 +120,12 @@ async function updateLabel(labelId, updateData) {
     
   } catch (error) {
     console.error('Error in updateLabel:', error);
-    
+
     // Handle unique constraint violations
-    if (error.message.includes('UNIQUE constraint failed')) {
-      throw new Error('A label with this name already exists');
+    if (error.message.includes('UNIQUE constraint failed') || error.message.includes('unique')) {
+      throw new Error('Label with this name already exists (unique constraint violation)');
     }
-    
+
     throw new Error(`Failed to update label: ${error.message}`);
   }
 }

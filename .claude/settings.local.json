@@ -4,7 +4,14 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nDoc: add CLAUDE.md for AI Annotation Tool\n\nAdded comprehensive CLAUDE.md documentation file for the AI Annotation Tool directory. This file provides:\n- Project context and technology stack overview\n- Complete database schema with relationships\n- API endpoint documentation\n- Project structure and key features\n- Setup and running instructions\n- Development tips and common pitfalls\n- Git workflow and AI assistance notes\n\nThis documentation helps AI assistants (like Claude) understand the project structure and make informed changes.\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npm test:*)",
+      "Bash(npx mocha:*)",
+      "Bash(npm run db:reset:*)",
+      "Bash(node test-report.js:*)",
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

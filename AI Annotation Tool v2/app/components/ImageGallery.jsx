@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import ImageCard from './ImageCard'
+import { apiClient, NetworkError } from '../../lib/utils/network-error-handler'
+import { useDataSync, useAutoRefresh, DATA_SYNC_EVENTS } from '../../lib/utils/data-sync'
 
 /**
  * ImageGallery Component
@@ -23,6 +25,62 @@ export default function ImageGallery({
     const [pagination, setPagination] = useState(propPagination)
     const [error, setError] = useState(propError)
     const [loading, setLoading] = useState(propLoading !== null ? propLoading : (propImages === null && propError === null))
+    const [retryCount, setRetryCount] = useState(0)
+
+    // Auto-refresh when data changes
+    useAutoRefresh(
+        () => {
+            if (propImages === null && propError === null && propLoading === null) {
+                fetchImages()
+            }
+        },
+        [DATA_SYNC_EVENTS.IMAGES_REFRESHED, DATA_SYNC_EVENTS.IMAGE_ADDED],
+        { enabled: process.env.NODE_ENV !== 'test' }
+    )
+
+    // Fetch data when component mounts or parameters change
+    const fetchImages = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            // Construct query parameters
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: limit.toString()
+            })
+
+            if (searchQuery) {
+                params.set('search', searchQuery)
+            }
+            if (selectedLabel) {
+                params.set('label', selectedLabel)
+            }
+
+            // Use API client with built-in error handling and retry logic
+            const data = await apiClient.get(`/api/images?${params.toString()}`)
+
+            if (data.success) {
+                setImages(data.data || [])
+                setPagination(data.pagination)
+                setRetryCount(0) // Reset retry count on success
+            } else {
+                throw new NetworkError(data.error || 'Failed to fetch images')
+            }
+        } catch (err) {
+            console.error('Error fetching images:', err)
+
+            // Set user-friendly error message
+            const errorMessage = err instanceof NetworkError
+                ? err.userFriendlyMessage
+                : 'Failed to load images. Please try again.'
+
+            setError(errorMessage)
+            setRetryCount(prev => prev + 1)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     // Fetch data when component mounts or parameters change
     useEffect(() => {
@@ -41,51 +99,13 @@ export default function ImageGallery({
             return
         }
 
-        const fetchImages = async () => {
-            try {
-                setLoading(true)
-                setError(null)
-
-                // Construct API URL with query parameters
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-                const url = new URL(`${baseUrl}/api/images`)
-                url.searchParams.set('page', page.toString())
-                url.searchParams.set('limit', limit.toString())
-
-                if (searchQuery) {
-                    url.searchParams.set('search', searchQuery)
-                }
-                if (selectedLabel) {
-                    url.searchParams.set('label', selectedLabel)
-                }
-
-                // Fetch images from API
-                const response = await fetch(url.toString(), {
-                    cache: 'no-store' // Ensure fresh data on each request
-                })
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch images: ${response.status}`)
-                }
-
-                const data = await response.json()
-
-                if (data.success) {
-                    setImages(data.data || [])
-                    setPagination(data.pagination)
-                } else {
-                    throw new Error(data.error || 'Failed to fetch images')
-                }
-            } catch (err) {
-                console.error('Error fetching images:', err)
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
-        }
-
         fetchImages()
     }, [page, limit, searchQuery, selectedLabel, propImages, propPagination, propError, propLoading])
+
+    // Retry function for error recovery
+    const handleRetry = () => {
+        fetchImages()
+    }
 
     // Loading state
     if (loading) {
@@ -100,11 +120,11 @@ export default function ImageGallery({
         )
     }
 
-    // Error state
+    // Error state with retry functionality
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center py-12 px-4">
-                <div className="text-center">
+                <div className="text-center max-w-md">
                     <svg
                         className="mx-auto h-16 w-16 text-red-400 mb-4"
                         fill="none"
@@ -119,7 +139,38 @@ export default function ImageGallery({
                         />
                     </svg>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Images</h3>
-                    <p className="text-gray-500">{error}</p>
+                    <p className="text-gray-500 mb-4">{error}</p>
+                    {retryCount > 0 && (
+                        <p className="text-sm text-gray-400 mb-4">
+                            Retry attempt: {retryCount}
+                        </p>
+                    )}
+                    <div className="space-y-2">
+                        <button
+                            onClick={handleRetry}
+                            disabled={loading}
+                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px] touch-manipulation transition-colors"
+                            data-testid="retry-button"
+                        >
+                            {loading ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Retrying...
+                                </>
+                            ) : (
+                                'Try Again'
+                            )}
+                        </button>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px] touch-manipulation transition-colors"
+                        >
+                            Reload Page
+                        </button>
+                    </div>
                 </div>
             </div>
         )

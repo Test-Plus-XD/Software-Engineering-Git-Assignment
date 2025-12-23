@@ -6,6 +6,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
+import { apiClient, NetworkError } from '../../lib/utils/network-error-handler'
+import { dataOperations, useDataSync, DATA_SYNC_EVENTS } from '../../lib/utils/data-sync'
 
 export default function LabelSelector({
     selectedLabels = [],
@@ -26,6 +28,11 @@ export default function LabelSelector({
 
     // Fetch available labels on component mount
     useEffect(() => {
+        fetchLabels()
+    }, [])
+
+    // Auto-refresh labels when they change
+    useDataSync(DATA_SYNC_EVENTS.LABELS_REFRESHED, () => {
         fetchLabels()
     }, [])
 
@@ -56,16 +63,18 @@ export default function LabelSelector({
         setError(null)
 
         try {
-            const response = await fetch('/api/labels')
-            const data = await response.json()
+            const data = await apiClient.get('/api/labels')
 
             if (data.success) {
                 setAvailableLabels(data.data)
             } else {
-                setError('Failed to load labels')
+                throw new NetworkError(data.error || 'Failed to load labels')
             }
         } catch (err) {
-            setError('Failed to load labels')
+            const errorMessage = err instanceof NetworkError
+                ? err.userFriendlyMessage
+                : 'Failed to load labels. Please try again.'
+            setError(errorMessage)
             console.error('Error fetching labels:', err)
         } finally {
             setIsLoading(false)
@@ -74,13 +83,7 @@ export default function LabelSelector({
 
     const createNewLabel = async (labelName) => {
         try {
-            const response = await fetch('/api/labels', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ label_name: labelName })
-            })
-
-            const data = await response.json()
+            const data = await apiClient.post('/api/labels', { label_name: labelName })
 
             if (data.success) {
                 // Add new label to available labels
@@ -90,15 +93,21 @@ export default function LabelSelector({
                 const newSelectedLabels = [...selectedLabels, labelName]
                 onLabelsChange(newSelectedLabels)
 
+                // Notify data sync
+                dataOperations.notifyLabelAdded(data.data)
+
                 // Clear search and close dropdown
                 setSearchTerm('')
                 setIsOpen(false)
                 setHighlightedIndex(-1)
             } else {
-                setError('Failed to create label')
+                throw new NetworkError(data.error || 'Failed to create label')
             }
         } catch (err) {
-            setError('Failed to create label')
+            const errorMessage = err instanceof NetworkError
+                ? err.userFriendlyMessage
+                : 'Failed to create label. Please try again.'
+            setError(errorMessage)
             console.error('Error creating label:', err)
         }
     }

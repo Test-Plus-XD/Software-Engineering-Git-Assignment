@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { apiClient, NetworkError } from '../../lib/utils/network-error-handler'
+import { dataOperations } from '../../lib/utils/data-sync'
 
 /**
  * UploadForm Component
@@ -184,21 +186,19 @@ export default function UploadForm({
         setErrorMessage('')
         setSuccessMessage('')
 
+        // Notify upload progress start
+        dataOperations.notifyUploadProgress({
+            filename: selectedFile.name,
+            progress: 0,
+            status: 'starting'
+        })
+
         try {
             const formData = new FormData()
             formData.append('image', selectedFile)
 
-            const response = await fetch('/api/images', {
-                method: 'POST',
-                body: formData
-            })
-
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Upload failed')
-            }
-
-            const result = await response.json()
+            // Use API client with built-in error handling
+            const result = await apiClient.post('/api/images', formData)
 
             if (result.success) {
                 setUploadStatus('success')
@@ -208,35 +208,50 @@ export default function UploadForm({
                     fileInputRef.current.value = ''
                 }
 
+                // Notify successful upload and data sync
+                dataOperations.notifyUploadCompleted(result.data)
+
                 if (onUploadSuccess) {
                     onUploadSuccess(result.data)
                 }
             } else {
-                throw new Error(result.error || 'Upload failed')
+                throw new NetworkError(result.error || 'Upload failed')
             }
         } catch (error) {
             setUploadStatus('error')
 
-            // Edge Case 5: Provide specific error messages based on error type
+            // Get user-friendly error message
             let userFriendlyMessage = 'Upload failed'
 
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                userFriendlyMessage = 'Network connection failed. Please check your internet connection and try again.'
-            } else if (error.message.includes('413') || error.message.includes('too large')) {
-                userFriendlyMessage = 'File is too large for the server. Try compressing your image or choosing a smaller file.'
-            } else if (error.message.includes('415') || error.message.includes('unsupported')) {
-                userFriendlyMessage = 'File format not supported by the server. Please convert your image to JPEG, PNG, GIF, or WebP format.'
-            } else if (error.message.includes('400') || error.message.includes('invalid')) {
-                userFriendlyMessage = 'The image file appears to be corrupted or invalid. Please try a different image.'
-            } else if (error.message.includes('500') || error.message.includes('server')) {
-                userFriendlyMessage = 'Server error occurred. Please try again in a few moments.'
-            } else if (error.message.includes('timeout')) {
-                userFriendlyMessage = 'Upload timed out. Your file might be too large or your connection is slow. Please try again.'
-            } else if (error.message) {
-                userFriendlyMessage = error.message
+            if (error instanceof NetworkError) {
+                userFriendlyMessage = error.userFriendlyMessage
+            } else {
+                // Handle specific error cases
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    userFriendlyMessage = 'Network connection failed. Please check your internet connection and try again.'
+                } else if (error.message.includes('413') || error.message.includes('too large')) {
+                    userFriendlyMessage = 'File is too large for the server. Try compressing your image or choosing a smaller file.'
+                } else if (error.message.includes('415') || error.message.includes('unsupported')) {
+                    userFriendlyMessage = 'File format not supported by the server. Please convert your image to JPEG, PNG, GIF, or WebP format.'
+                } else if (error.message.includes('400') || error.message.includes('invalid')) {
+                    userFriendlyMessage = 'The image file appears to be corrupted or invalid. Please try a different image.'
+                } else if (error.message.includes('500') || error.message.includes('server')) {
+                    userFriendlyMessage = 'Server error occurred. Please try again in a few moments.'
+                } else if (error.message.includes('timeout')) {
+                    userFriendlyMessage = 'Upload timed out. Your file might be too large or your connection is slow. Please try again.'
+                } else if (error.message) {
+                    userFriendlyMessage = error.message
+                }
             }
 
             setErrorMessage(userFriendlyMessage)
+
+            // Notify upload failure
+            dataOperations.notifyUploadFailed({
+                filename: selectedFile.name,
+                error: userFriendlyMessage,
+                originalError: error
+            })
 
             if (onUploadError) {
                 onUploadError(userFriendlyMessage)

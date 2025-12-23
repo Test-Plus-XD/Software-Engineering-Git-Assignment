@@ -5,49 +5,28 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import Home from './page';
-import test from 'node:test';
-import test from 'node:test';
-import { describe } from 'zod';
-import test from 'node:test';
-import test from 'node:test';
-import test from 'node:test';
-import { describe } from 'zod';
-import test from 'node:test';
-import test from 'node:test';
-import test from 'node:test';
-import test from 'node:test';
-import { describe } from 'zod';
-import test from 'node:test';
-import test from 'node:test';
-import test from 'node:test';
-import { describe } from 'zod';
-import test from 'node:test';
-import test from 'node:test';
-import test from 'node:test';
-import { describe } from 'zod';
-import { describe } from 'zod';
 
 // Mock the components that should be integrated
 jest.mock('./components/ImageGallery', () => {
-    return function MockImageGallery(props) {
+    return function MockImageGallery() {
         return <div data-testid="image-gallery">ImageGallery Component</div>;
     };
 });
 
 jest.mock('./components/UploadForm', () => {
-    return function MockUploadForm(props) {
+    return function MockUploadForm() {
         return <div data-testid="upload-form">UploadForm Component</div>;
     };
 });
 
 jest.mock('./components/WaveBackground', () => {
-    return function MockWaveBackground(props) {
+    return function MockWaveBackground() {
         return <div data-testid="wave-background">WaveBackground Component</div>;
     };
 });
 
 jest.mock('./components/ErrorBoundary', () => {
-    return function MockErrorBoundary({ children }) {
+    return function MockErrorBoundary({ children }: { children: React.ReactNode }) {
         return <div data-testid="error-boundary">{children}</div>;
     };
 });

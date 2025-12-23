@@ -199,13 +199,13 @@ export default function LabelSelector({
                         <div
                             key={label}
                             data-testid={`selected-label-${label}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm min-h-[44px] touch-manipulation"
                         >
                             <span>{label}</span>
                             <button
                                 data-testid={`remove-label-${label}`}
                                 onClick={() => handleLabelRemove(label)}
-                                className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
+                                className="ml-1 text-blue-600 hover:text-blue-800 active:text-blue-900 focus:outline-none min-w-[44px] min-h-[44px] touch-manipulation transition-colors"
                                 aria-label={`Remove ${label}`}
                             >
                                 ×
@@ -221,7 +221,7 @@ export default function LabelSelector({
             {/* Dropdown Trigger */}
             <div
                 data-testid="label-selector-dropdown"
-                className="relative border border-gray-300 rounded-md px-3 py-2 cursor-pointer bg-white hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+                className="relative border border-gray-300 rounded-md px-3 py-2 cursor-pointer bg-white hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 min-h-[44px] touch-manipulation active:ring-2 active:ring-blue-300 transition-colors"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <input
@@ -232,7 +232,7 @@ export default function LabelSelector({
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={selectedLabels.length === 0 ? placeholder : 'Search labels...'}
-                    className="w-full outline-none bg-transparent"
+                    className="w-full outline-none bg-transparent min-h-[44px] text-base md:text-sm touch-manipulation"
                     onClick={(e) => e.stopPropagation()}
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -268,9 +268,9 @@ export default function LabelSelector({
                             <div
                                 key={option.type === 'create' ? `create-${option.label}` : option.label_id}
                                 data-testid={index === highlightedIndex ? 'highlighted-option' : undefined}
-                                className={`px-3 py-2 cursor-pointer flex items-center justify-between ${index === highlightedIndex
-                                        ? 'bg-blue-50 text-blue-900'
-                                        : 'hover:bg-gray-50'
+                                className={`px-3 py-2 cursor-pointer flex items-center justify-between min-h-[44px] touch-manipulation transition-colors ${index === highlightedIndex
+                                    ? 'bg-blue-50 text-blue-900'
+                                    : 'hover:bg-gray-50 active:bg-gray-100'
                                     } ${selectedLabels.includes(option.label_name || option.label)
                                         ? 'opacity-50'
                                         : ''

@@ -279,11 +279,11 @@ export default function UploadForm({
             <div
                 data-testid="drop-zone"
                 className={`
-                    border-2 border-dashed rounded-lg p-8 text-center transition-colors
+                    border-2 border-dashed rounded-lg p-8 text-center transition-colors touch-manipulation
                     ${isDragOver && browserSupport.dragDrop ? 'border-blue-500 bg-blue-50 drag-over' : 'border-gray-300'}
                     ${hasValidFile ? 'border-green-500 bg-green-50' : ''}
                     ${validationError ? 'border-red-500 bg-red-50' : ''}
-                    ${!browserSupport.fileApi ? 'opacity-50 cursor-not-allowed' : ''}
+                    ${!browserSupport.fileApi ? 'opacity-50 cursor-not-allowed' : 'active:bg-blue-100'}
                 `}
                 onDragEnter={browserSupport.dragDrop ? handleDragEnter : undefined}
                 onDragLeave={browserSupport.dragDrop ? handleDragLeave : undefined}
@@ -317,9 +317,9 @@ export default function UploadForm({
                             onClick={() => browserSupport.fileApi ? fileInputRef.current?.click() : null}
                             disabled={!browserSupport.fileApi}
                             className={`
-                                inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md
+                                inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md min-h-[44px] min-w-[44px] touch-manipulation
                                 ${browserSupport.fileApi
-                                    ? 'text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                                    ? 'text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors'
                                     : 'text-gray-400 bg-gray-200 cursor-not-allowed'
                                 }
                             `}
@@ -410,9 +410,9 @@ export default function UploadForm({
                         onClick={handleUpload}
                         disabled={!canUpload}
                         className={`
-                            flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md
+                            flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md min-h-[44px] touch-manipulation
                             ${canUpload
-                                ? 'text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                                ? 'text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors'
                                 : 'text-gray-400 bg-gray-200 cursor-not-allowed'
                             }
                         `}
@@ -433,7 +433,7 @@ export default function UploadForm({
                     <button
                         type="button"
                         onClick={handleRetry}
-                        className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 min-h-[44px] touch-manipulation transition-colors"
                     >
                         Try Again
                     </button>
@@ -443,7 +443,7 @@ export default function UploadForm({
                     <button
                         type="button"
                         onClick={handleRemoveFile}
-                        className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px] touch-manipulation transition-colors"
                     >
                         Clear
                     </button>

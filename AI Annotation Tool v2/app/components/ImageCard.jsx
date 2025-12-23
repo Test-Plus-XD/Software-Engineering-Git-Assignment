@@ -67,10 +67,14 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
         return 'w-full max-w-sm md:max-w-md lg:max-w-md'
     }
 
+    const getTouchFeedbackClasses = () => {
+        return 'active:scale-95 active:shadow-sm touch-manipulation'
+    }
+
     return (
         <div
             data-testid="image-card"
-            className={`bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg ${getResponsiveClasses()} ${className}`}
+            className={`bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg ${getResponsiveClasses()} ${getTouchFeedbackClasses()} ${className}`}
             onMouseEnter={() => setShowDetails(true)}
             onMouseLeave={() => setShowDetails(false)}
         >
@@ -150,7 +154,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
                                 {image.labels.map((label, index) => (
                                     <div
                                         key={`${label}-${index}`}
-                                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ${onLabelClick ? 'cursor-pointer hover:bg-blue-200 transition-colors' : ''
+                                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 min-h-[44px] min-w-[44px] touch-manipulation ${onLabelClick ? 'cursor-pointer hover:bg-blue-200 active:bg-blue-300 transition-colors' : ''
                                             }`}
                                         onClick={() => handleLabelClick(label)}
                                     >

@@ -160,7 +160,7 @@ export default function ImageGallery({
             {/* Image Grid */}
             <div
                 data-testid="image-gallery-grid"
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 transition-all duration-300 ease-in-out"
             >
                 {images.map((image) => (
                     <ImageCard
@@ -208,7 +208,7 @@ function PaginationButton({ href, disabled, children, direction }) {
         return (
             <button
                 disabled
-                className="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed min-h-[44px] min-w-[44px] touch-manipulation"
                 role="button"
                 aria-label={direction}
             >
@@ -220,7 +220,7 @@ function PaginationButton({ href, disabled, children, direction }) {
     return (
         <a
             href={href}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] touch-manipulation inline-flex items-center justify-center"
             role="button"
             aria-label={direction}
         >

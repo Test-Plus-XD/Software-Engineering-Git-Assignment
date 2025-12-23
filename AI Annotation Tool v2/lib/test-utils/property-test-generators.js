@@ -25,26 +25,26 @@ export const labelDataGenerator = () => fc.record({
 
 // Generator for file upload data
 export const fileUploadGenerator = () => fc.record({
-    name: fc.string({ minLength: 5, maxLength: 50 }).map(s => `${s}.jpg`),
+    name: fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0).map(s => `${s.trim()}.jpg`),
     size: fc.integer({ min: 1000, max: 10000000 }),
     type: fc.constantFrom('image/jpeg', 'image/png', 'image/gif', 'image/webp'),
-    lastModified: fc.date().map(d => d.getTime())
+    lastModified: fc.integer({ min: 0, max: Date.now() })
 })
 
 // Generator for invalid file types
 export const invalidFileGenerator = () => fc.record({
-    name: fc.string({ minLength: 5, maxLength: 50 }).map(s => `${s}.txt`),
+    name: fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0).map(s => `${s.trim()}.txt`),
     size: fc.integer({ min: 100, max: 1000 }),
     type: fc.constantFrom('text/plain', 'application/pdf', 'video/mp4', 'audio/mp3'),
-    lastModified: fc.date().map(d => d.getTime())
+    lastModified: fc.integer({ min: 0, max: Date.now() })
 })
 
 // Generator for oversized files
 export const oversizedFileGenerator = () => fc.record({
-    name: fc.string({ minLength: 5, maxLength: 50 }).map(s => `${s}.jpg`),
+    name: fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0).map(s => `${s.trim()}.jpg`),
     size: fc.integer({ min: 15000000, max: 50000000 }), // 15MB+
     type: fc.constantFrom('image/jpeg', 'image/png'),
-    lastModified: fc.date().map(d => d.getTime())
+    lastModified: fc.integer({ min: 0, max: Date.now() })
 })
 
 // Generator for viewport dimensions

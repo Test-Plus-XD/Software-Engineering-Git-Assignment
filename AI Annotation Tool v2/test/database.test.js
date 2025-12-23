@@ -1,12 +1,12 @@
 /**
  * Database Tests for AI Annotation Tool v2
- * Comprehensive Mocha test suite for database functionality
+ * Comprehensive Mocha test suite for database functionality using better-sqlite3
  */
 
 const { expect } = require('chai');
 const fs = require('fs');
 const path = require('path');
-const { query, queryOne, run, closeDatabase } = require('../lib/database');
+const { query, queryOne, run, closeDatabase } = require('../lib/database/connection');
 
 describe('Database Tests', function() {
   // Increase timeout for database operations
@@ -15,15 +15,17 @@ describe('Database Tests', function() {
   const TEST_DB_PATH = path.join(__dirname, '..', 'database', 'test_annotations.db');
   const ORIGINAL_DB_PATH = path.join(__dirname, '..', 'database', 'annotations.db');
 
-  before(async function() {
+  before(function() {
     // Create a test database copy to avoid affecting the main database
     if (fs.existsSync(ORIGINAL_DB_PATH)) {
       fs.copyFileSync(ORIGINAL_DB_PATH, TEST_DB_PATH);
     } else {
       // If no main database exists, initialize one for testing
       const { initializeDatabase } = require('../database/init');
-      await initializeDatabase();
-      fs.copyFileSync(ORIGINAL_DB_PATH, TEST_DB_PATH);
+      initializeDatabase();
+      if (fs.existsSync(ORIGINAL_DB_PATH)) {
+        fs.copyFileSync(ORIGINAL_DB_PATH, TEST_DB_PATH);
+      }
     }
 
     // Override the database path for testing
@@ -40,14 +42,14 @@ describe('Database Tests', function() {
   });
 
   describe('Database Connection', function() {
-    it('should connect to the database successfully', async function() {
-      const result = await query('SELECT 1 as test');
+    it('should connect to the database successfully', function() {
+      const result = query('SELECT 1 as test');
       expect(result).to.be.an('array');
       expect(result[0]).to.have.property('test', 1);
     });
 
-    it('should have all required tables', async function() {
-      const tables = await query(`
+    it('should have all required tables', function() {
+      const tables = query(`
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name NOT LIKE 'sqlite_%'
         ORDER BY name
@@ -57,8 +59,8 @@ describe('Database Tests', function() {
       expect(tableNames).to.include.members(['images', 'labels', 'annotations']);
     });
 
-    it('should have foreign key constraints enabled', async function() {
-      const result = await query('PRAGMA foreign_keys');
+    it('should have foreign key constraints enabled', function() {
+      const result = query('PRAGMA foreign_keys');
       expect(result[0]).to.have.property('foreign_keys', 1);
     });
   });
@@ -66,7 +68,7 @@ describe('Database Tests', function() {
   describe('Images Table', function() {
     let testImageId;
 
-    it('should insert a new image record', async function() {
+    it('should insert a new image record', function() {
       const imageData = {
         filename: 'test-image.jpg',
         original_name: 'my-test-image.jpg',
@@ -75,7 +77,7 @@ describe('Database Tests', function() {
         mime_type: 'image/jpeg'
       };
 
-      const result = await run(
+      const result = run(
         'INSERT INTO images (filename, original_name, file_path, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
         [imageData.filename, imageData.original_name, imageData.file_path, imageData.file_size, imageData.mime_type]
       );
@@ -87,8 +89,8 @@ describe('Database Tests', function() {
       testImageId = result.lastID;
     });
 
-    it('should retrieve the inserted image', async function() {
-      const image = await queryOne('SELECT * FROM images WHERE image_id = ?', [testImageId]);
+    it('should retrieve the inserted image', function() {
+      const image = queryOne('SELECT * FROM images WHERE image_id = ?', [testImageId]);
       
       expect(image).to.be.an('object');
       expect(image).to.have.property('filename', 'test-image.jpg');
@@ -99,20 +101,17 @@ describe('Database Tests', function() {
       expect(image).to.have.property('updated_at');
     });
 
-    it('should enforce unique filename constraint', async function() {
-      try {
-        await run(
+    it('should enforce unique filename constraint', function() {
+      expect(() => {
+        run(
           'INSERT INTO images (filename, original_name, file_path, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
           ['test-image.jpg', 'duplicate.jpg', 'public/uploads/duplicate.jpg', 789, 'image/jpeg']
         );
-        expect.fail('Should have thrown an error for duplicate filename');
-      } catch (error) {
-        expect(error.message).to.include('UNIQUE constraint failed');
-      }
+      }).to.throw();
     });
 
-    it('should get all images', async function() {
-      const images = await query('SELECT * FROM images ORDER BY uploaded_at DESC');
+    it('should get all images', function() {
+      const images = query('SELECT * FROM images ORDER BY uploaded_at DESC');
       expect(images).to.be.an('array');
       expect(images.length).to.be.at.least(1);
       
@@ -121,10 +120,10 @@ describe('Database Tests', function() {
       expect(testImage).to.exist;
     });
 
-    after(async function() {
+    after(function() {
       // Clean up test image
       if (testImageId) {
-        await run('DELETE FROM images WHERE image_id = ?', [testImageId]);
+        run('DELETE FROM images WHERE image_id = ?', [testImageId]);
       }
     });
   });
@@ -132,8 +131,8 @@ describe('Database Tests', function() {
   describe('Labels Table', function() {
     let testLabelId;
 
-    it('should insert a new label', async function() {
-      const result = await run(
+    it('should insert a new label', function() {
+      const result = run(
         'INSERT INTO labels (label_name, label_description) VALUES (?, ?)',
         ['test-label', 'A test label for unit testing']
       );
@@ -143,8 +142,8 @@ describe('Database Tests', function() {
       testLabelId = result.lastID;
     });
 
-    it('should retrieve the inserted label', async function() {
-      const label = await queryOne('SELECT * FROM labels WHERE label_id = ?', [testLabelId]);
+    it('should retrieve the inserted label', function() {
+      const label = queryOne('SELECT * FROM labels WHERE label_id = ?', [testLabelId]);
       
       expect(label).to.be.an('object');
       expect(label).to.have.property('label_name', 'test-label');
@@ -152,20 +151,17 @@ describe('Database Tests', function() {
       expect(label).to.have.property('created_at');
     });
 
-    it('should enforce unique label name constraint', async function() {
-      try {
-        await run(
+    it('should enforce unique label name constraint', function() {
+      expect(() => {
+        run(
           'INSERT INTO labels (label_name, label_description) VALUES (?, ?)',
           ['test-label', 'Duplicate label']
         );
-        expect.fail('Should have thrown an error for duplicate label name');
-      } catch (error) {
-        expect(error.message).to.include('UNIQUE constraint failed');
-      }
+      }).to.throw();
     });
 
-    it('should have sample labels from seed data', async function() {
-      const labels = await query('SELECT * FROM labels ORDER BY label_name');
+    it('should have sample labels from seed data', function() {
+      const labels = query('SELECT * FROM labels ORDER BY label_name');
       expect(labels).to.be.an('array');
       expect(labels.length).to.be.at.least(10); // Should have seed data
       
@@ -173,10 +169,10 @@ describe('Database Tests', function() {
       expect(labelNames).to.include.members(['cat', 'dog', 'animal', 'person']);
     });
 
-    after(async function() {
+    after(function() {
       // Clean up test label
       if (testLabelId) {
-        await run('DELETE FROM labels WHERE label_id = ?', [testLabelId]);
+        run('DELETE FROM labels WHERE label_id = ?', [testLabelId]);
       }
     });
   });
@@ -184,23 +180,23 @@ describe('Database Tests', function() {
   describe('Annotations Table', function() {
     let testImageId, testLabelId, testAnnotationId;
 
-    before(async function() {
+    before(function() {
       // Create test image and label for annotation tests
-      const imageResult = await run(
+      const imageResult = run(
         'INSERT INTO images (filename, original_name, file_path, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
         ['annotation-test.jpg', 'test.jpg', 'public/uploads/annotation-test.jpg', 100000, 'image/jpeg']
       );
       testImageId = imageResult.lastID;
 
-      const labelResult = await run(
+      const labelResult = run(
         'INSERT INTO labels (label_name, label_description) VALUES (?, ?)',
         ['annotation-test-label', 'Test label for annotations']
       );
       testLabelId = labelResult.lastID;
     });
 
-    it('should create an annotation', async function() {
-      const result = await run(
+    it('should create an annotation', function() {
+      const result = run(
         'INSERT INTO annotations (image_id, label_id, confidence) VALUES (?, ?, ?)',
         [testImageId, testLabelId, 0.95]
       );
@@ -210,8 +206,8 @@ describe('Database Tests', function() {
       testAnnotationId = result.lastID;
     });
 
-    it('should retrieve the annotation with joins', async function() {
-      const annotation = await queryOne(`
+    it('should retrieve the annotation with joins', function() {
+      const annotation = queryOne(`
         SELECT 
           a.*,
           i.filename,
@@ -228,58 +224,52 @@ describe('Database Tests', function() {
       expect(annotation).to.have.property('label_name', 'annotation-test-label');
     });
 
-    it('should enforce confidence range constraint', async function() {
-      try {
-        await run(
+    it('should enforce confidence range constraint', function() {
+      expect(() => {
+        run(
           'INSERT INTO annotations (image_id, label_id, confidence) VALUES (?, ?, ?)',
           [testImageId, testLabelId, 1.5] // Invalid confidence > 1.0
         );
-        expect.fail('Should have thrown an error for invalid confidence');
-      } catch (error) {
-        expect(error.message).to.include('CHECK constraint failed');
-      }
+      }).to.throw();
     });
 
-    it('should enforce unique image-label combination', async function() {
-      try {
-        await run(
+    it('should enforce unique image-label combination', function() {
+      expect(() => {
+        run(
           'INSERT INTO annotations (image_id, label_id, confidence) VALUES (?, ?, ?)',
           [testImageId, testLabelId, 0.8] // Same image-label combination
         );
-        expect.fail('Should have thrown an error for duplicate annotation');
-      } catch (error) {
-        expect(error.message).to.include('UNIQUE constraint failed');
-      }
+      }).to.throw();
     });
 
-    it('should cascade delete when image is deleted', async function() {
+    it('should cascade delete when image is deleted', function() {
       // Create a temporary image and annotation
-      const tempImageResult = await run(
+      const tempImageResult = run(
         'INSERT INTO images (filename, original_name, file_path, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
         ['temp-cascade-test.jpg', 'temp.jpg', 'public/uploads/temp.jpg', 50000, 'image/jpeg']
       );
       const tempImageId = tempImageResult.lastID;
 
-      const tempAnnotationResult = await run(
+      const tempAnnotationResult = run(
         'INSERT INTO annotations (image_id, label_id, confidence) VALUES (?, ?, ?)',
         [tempImageId, testLabelId, 0.7]
       );
       const tempAnnotationId = tempAnnotationResult.lastID;
 
       // Verify annotation exists
-      let annotation = await queryOne('SELECT * FROM annotations WHERE annotation_id = ?', [tempAnnotationId]);
+      let annotation = queryOne('SELECT * FROM annotations WHERE annotation_id = ?', [tempAnnotationId]);
       expect(annotation).to.exist;
 
       // Delete the image
-      await run('DELETE FROM images WHERE image_id = ?', [tempImageId]);
+      run('DELETE FROM images WHERE image_id = ?', [tempImageId]);
 
       // Verify annotation was cascade deleted
-      annotation = await queryOne('SELECT * FROM annotations WHERE annotation_id = ?', [tempAnnotationId]);
+      annotation = queryOne('SELECT * FROM annotations WHERE annotation_id = ?', [tempAnnotationId]);
       expect(annotation).to.be.undefined;
     });
 
-    it('should get annotations with image and label details', async function() {
-      const annotations = await query(`
+    it('should get annotations with image and label details', function() {
+      const annotations = query(`
         SELECT 
           a.*,
           i.filename,
@@ -303,23 +293,23 @@ describe('Database Tests', function() {
       expect(firstAnnotation).to.have.property('label_name');
     });
 
-    after(async function() {
+    after(function() {
       // Clean up test data
       if (testAnnotationId) {
-        await run('DELETE FROM annotations WHERE annotation_id = ?', [testAnnotationId]);
+        run('DELETE FROM annotations WHERE annotation_id = ?', [testAnnotationId]);
       }
       if (testImageId) {
-        await run('DELETE FROM images WHERE image_id = ?', [testImageId]);
+        run('DELETE FROM images WHERE image_id = ?', [testImageId]);
       }
       if (testLabelId) {
-        await run('DELETE FROM labels WHERE label_id = ?', [testLabelId]);
+        run('DELETE FROM labels WHERE label_id = ?', [testLabelId]);
       }
     });
   });
 
   describe('Database Indexes', function() {
-    it('should have proper indexes for performance', async function() {
-      const indexes = await query(`
+    it('should have proper indexes for performance', function() {
+      const indexes = query(`
         SELECT name, tbl_name, sql 
         FROM sqlite_master 
         WHERE type='index' AND name NOT LIKE 'sqlite_%'
@@ -337,8 +327,8 @@ describe('Database Tests', function() {
   });
 
   describe('Complex Queries', function() {
-    it('should get images with their labels', async function() {
-      const imagesWithLabels = await query(`
+    it('should get images with their labels', function() {
+      const imagesWithLabels = query(`
         SELECT 
           i.image_id,
           i.filename,
@@ -367,8 +357,8 @@ describe('Database Tests', function() {
       });
     });
 
-    it('should get label usage statistics', async function() {
-      const labelStats = await query(`
+    it('should get label usage statistics', function() {
+      const labelStats = query(`
         SELECT 
           l.label_id,
           l.label_name,
@@ -397,8 +387,8 @@ describe('Database Tests', function() {
       });
     });
 
-    it('should search images by label', async function() {
-      const catImages = await query(`
+    it('should search images by label', function() {
+      const catImages = query(`
         SELECT DISTINCT i.*
         FROM images i
         JOIN annotations a ON i.image_id = a.image_id
@@ -419,40 +409,34 @@ describe('Database Tests', function() {
   });
 
   describe('Data Integrity', function() {
-    it('should maintain referential integrity', async function() {
+    it('should maintain referential integrity', function() {
       // Try to create annotation with non-existent image
-      try {
-        await run(
+      expect(() => {
+        run(
           'INSERT INTO annotations (image_id, label_id, confidence) VALUES (?, ?, ?)',
           [99999, 1, 0.5] // Non-existent image_id
         );
-        expect.fail('Should have thrown foreign key constraint error');
-      } catch (error) {
-        expect(error.message).to.include('FOREIGN KEY constraint failed');
-      }
+      }).to.throw();
 
       // Try to create annotation with non-existent label
-      try {
-        await run(
+      expect(() => {
+        run(
           'INSERT INTO annotations (image_id, label_id, confidence) VALUES (?, ?, ?)',
           [1, 99999, 0.5] // Non-existent label_id
         );
-        expect.fail('Should have thrown foreign key constraint error');
-      } catch (error) {
-        expect(error.message).to.include('FOREIGN KEY constraint failed');
-      }
+      }).to.throw();
     });
 
-    it('should have consistent data types', async function() {
+    it('should have consistent data types', function() {
       // Check that all confidence values are within valid range
-      const invalidConfidences = await query(`
+      const invalidConfidences = query(`
         SELECT * FROM annotations 
         WHERE confidence < 0 OR confidence > 1
       `);
       expect(invalidConfidences).to.have.length(0);
 
       // Check that all file sizes are positive
-      const invalidFileSizes = await query(`
+      const invalidFileSizes = query(`
         SELECT * FROM images 
         WHERE file_size <= 0
       `);

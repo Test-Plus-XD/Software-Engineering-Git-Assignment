@@ -11,13 +11,13 @@ const { spawn } = require('child_process');
 
 const DB_PATH = path.join(__dirname, '..', 'database', 'annotations.db');
 
-async function ensureDatabaseExists() {
+function ensureDatabaseExists() {
   if (!fs.existsSync(DB_PATH)) {
     console.log('Database not found. Initializing...');
     
     const { initializeDatabase } = require('../database/init');
     try {
-      await initializeDatabase();
+      initializeDatabase();
       console.log('Database initialized successfully.');
     } catch (error) {
       console.error('Failed to initialize database:', error);
@@ -28,8 +28,8 @@ async function ensureDatabaseExists() {
   }
 }
 
-async function runTests() {
-  await ensureDatabaseExists();
+function runTests() {
+  ensureDatabaseExists();
   
   // Run Mocha tests
   const mocha = spawn('npx', ['mocha', 'test/**/*.test.js', '--timeout', '10000'], {
@@ -50,10 +50,12 @@ async function runTests() {
 
 // Run if called directly
 if (require.main === module) {
-  runTests().catch(error => {
+  try {
+    runTests();
+  } catch (error) {
     console.error('Test runner error:', error);
     process.exit(1);
-  });
+  }
 }
 
 module.exports = { runTests, ensureDatabaseExists };

@@ -196,19 +196,26 @@ This implementation plan converts the Phase 5 design into a series of TDD-focuse
   - Tests now pass
   - _Requirements: 4.1, 4.2, 4.3, 4.5_
 
-- [ ] 7. Add wave animations and visual enhancements
-- [ ] 7.1 Write failing tests for wave animation integration
+- [-] 7. Add wave animations and visual enhancements
+
+
+- [x] 7.1 Write failing tests for wave animation integration (https://github.com/woofers/react-wavify)
+
+
   - **Test wave components render when application loads**
   - **Test motion reduction preferences are respected**
   - **Test wave animations don't interfere with content**
   - All tests fail (wave integration not implemented)
   - _Requirements: 5.1, 5.5_
 
-- [ ] 7.2 Write property test for motion accessibility
+- [x] 7.2 Write property test for motion accessibility
+
+
   - **Property 9: Motion accessibility**
   - **Validates: Requirements 5.5**
 
-- [ ] 7.3 Implement wave animations using react-wavify
+- [-] 7.3 Implement wave animations using react-wavify
+
   - Add wave background components using react-wavify
   - Ensure animations respect prefers-reduced-motion
   - Position waves to complement content without interference

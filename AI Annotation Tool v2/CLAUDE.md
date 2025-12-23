@@ -21,7 +21,14 @@ This is the **AI Dataset Annotation Tool v2** - a modern, full-stack web applica
 ### Backend
 - **Next.js API Routes** - Server-side API endpoints
 - **better-sqlite3 12.5.0** - High-performance synchronous SQLite driver
+- **better-sqlite3-proxy 2.11.3** - Type-safe ORM layer with validation
 - **Node.js** - JavaScript runtime
+
+### Database & ORM
+- **SQLite** - File-based relational database
+- **Migration System** - Version-controlled schema management
+- **Better-SQLite3-Proxy** - ORM with type safety and transaction support
+- **Schema Validation** - Runtime data validation with Zod-like patterns
 
 ### Development & Testing
 - **ESLint 9** with Next.js config - Code linting
@@ -49,9 +56,21 @@ AI Annotation Tool v2/
 │   ├── layout.tsx                # Root layout
 │   └── page.tsx                  # Home page
 ├── lib/                          # Shared utilities
-│   └── database/
-│       ├── connection.js         # Database connection module
-│       └── schema.sql           # Database schema
+│   ├── database/                 # Database layer
+│   │   ├── connection.js         # Database connection module
+│   │   ├── config.js            # Database configuration
+│   │   ├── proxy.js             # Better-SQLite3-Proxy ORM
+│   │   ├── schemas.js           # Table schema definitions
+│   │   ├── schema.sql           # Raw SQL schema
+│   │   └── tests/               # Database layer tests
+│   │       └── proxy.test.js    # Proxy integration tests
+│   └── data-access/             # Data access layer
+│       ├── base.js              # Base class for common patterns
+│       ├── images.js            # Images data access
+│       ├── labels.js            # Labels data access
+│       └── tests/               # Data access tests
+│           ├── images.test.js   # Images functionality tests
+│           └── labels.test.js   # Labels functionality tests
 ├── database/                     # Database files
 │   ├── annotations.db           # SQLite database
 │   ├── init.js                  # Database initialization
@@ -76,6 +95,27 @@ AI Annotation Tool v2/
 ```
 
 ## Database Architecture
+
+### Multi-Layer Architecture
+The database system uses a sophisticated multi-layer architecture for maintainability and type safety:
+
+1. **Database Layer** (`lib/database/`)
+   - **Connection Module**: Manages SQLite connections with better-sqlite3
+   - **Configuration**: Centralized database settings and health checks
+   - **Migration System**: Version-controlled schema changes
+   - **Raw Schema**: SQL table definitions
+
+2. **ORM Layer** (`lib/database/proxy.js`, `lib/database/schemas.js`)
+   - **Better-SQLite3-Proxy**: Type-safe ORM with validation
+   - **Schema Definitions**: Structured table schemas with constraints
+   - **Transaction Support**: Atomic operations across tables
+   - **Custom Methods**: Table-specific query methods
+
+3. **Data Access Layer** (`lib/data-access/`)
+   - **Base Class**: Common CRUD patterns to reduce duplication
+   - **Images Module**: High-level image operations with eager loading
+   - **Labels Module**: Label operations with duplicate handling
+   - **Business Logic**: Validation, error handling, and complex queries
 
 ### Schema Design
 The database uses a **many-to-many relationship** between images and labels through an annotations junction table, identical to v1 but with better-sqlite3 for improved performance.
@@ -112,6 +152,94 @@ The database uses a **many-to-many relationship** between images and labels thro
   - `idx_labels_name` - For label name searches
 - **Foreign Key Constraints**: Enabled for data integrity
 - **Synchronous Operations**: better-sqlite3 for faster queries
+
+## ORM and Data Access Architecture
+
+### Better-SQLite3-Proxy Integration
+
+The application uses better-sqlite3-proxy as an ORM layer to provide type safety and structured data access:
+
+```javascript
+// lib/database/proxy.js - ORM Configuration
+const proxy = new BetterSQLite3Proxy({
+  database: db,
+  tables: {
+    images: {
+      ...schemas.images,
+      methods: {
+        findWithLabels: function() {
+          // Custom method for eager loading
+        },
+        findByIdWithAnnotations: function(imageId) {
+          // Join with annotations and labels
+        }
+      }
+    }
+  }
+});
+```
+
+### Schema Definitions
+
+Structured schema definitions with validation:
+
+```javascript
+// lib/database/schemas.js - Type-safe schemas
+const schemas = {
+  images: {
+    tableName: 'images',
+    columns: {
+      image_id: {
+        type: 'INTEGER',
+        primaryKey: true,
+        autoIncrement: true
+      },
+      filename: {
+        type: 'TEXT',
+        unique: true,
+        validate: (value) => value.length > 0
+      }
+    }
+  }
+};
+```
+
+### Data Access Layer
+
+High-level business logic with common patterns:
+
+```javascript
+// lib/data-access/images.js - Business logic
+async function getAllImages() {
+  const images = proxy.images.findWithLabels();
+  return images.map(image => ({
+    ...image,
+    labels: image.labels ? image.labels.split(',') : [],
+    label_count: image.labels ? image.labels.split(',').length : 0
+  }));
+}
+```
+
+### Base Class Pattern
+
+Common CRUD operations to reduce duplication:
+
+```javascript
+// lib/data-access/base.js - Reusable patterns
+class BaseDataAccess {
+  async create(data) {
+    const validation = validateData(this.tableName, data);
+    if (!validation.valid) {
+      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    }
+    
+    return proxy.transaction(() => {
+      const created = this.table.create(data);
+      return this.table.findById(created[this.primaryKey]);
+    });
+  }
+}
+```
 
 ## Database Connection Module
 
@@ -221,6 +349,38 @@ describe('Database Tests', function() {
 - **Schema Validation**: Ensures proper table structure and constraints
 - **Seed Data Testing**: Verifies sample data loading
 
+## Testing Architecture
+
+### Multi-Layer Testing Strategy
+The testing system covers all layers of the database architecture:
+
+```javascript
+// Database Layer Tests
+test/database.test.js              # Core database functionality
+lib/database/tests/proxy.test.js   # ORM proxy integration
+
+// Data Access Layer Tests  
+lib/data-access/tests/images.test.js  # Images business logic
+lib/data-access/tests/labels.test.js  # Labels with duplicate handling
+
+// Migration System Tests
+database/migrations/tests/migrations.test.js  # Schema migrations
+```
+
+### Test Database Isolation
+- **Separate Test Databases**: Each test suite uses isolated databases
+- **Automatic Cleanup**: Test data removed after each suite
+- **Schema Validation**: Ensures proper table structure and constraints
+- **Transaction Testing**: Verifies atomic operations and rollbacks
+
+### Test-Driven Development
+Tests were written first (failing) then implementations were created:
+
+1. **Failing Tests**: Define expected behavior and edge cases
+2. **Implementation**: Create code to make tests pass
+3. **Refactoring**: Extract common patterns into base classes
+4. **Validation**: Ensure all tests pass with new architecture
+
 ### Running Tests
 ```bash
 # Prerequisites - Database must be initialized
@@ -241,29 +401,40 @@ npm run test:ci
 
 ## Key Features & Improvements over v1
 
+### Architecture Enhancements
+1. **Multi-Layer Database Architecture**: Separation of concerns with database, ORM, and data access layers
+2. **Better-SQLite3-Proxy Integration**: Type-safe ORM with validation and custom methods
+3. **Migration System**: Version-controlled schema changes with rollback capability
+4. **Base Class Pattern**: Reduced code duplication through common CRUD operations
+5. **Comprehensive Testing**: Test-driven development with failing tests first
+
 ### Performance Enhancements
 1. **better-sqlite3**: Synchronous operations, 2-3x faster than sqlite3
-2. **Connection Pooling**: Singleton pattern for database connections
+2. **Connection Pooling**: Singleton pattern with health checks
 3. **Strategic Indexing**: Optimized queries for common operations
-4. **Next.js Optimization**: Built-in performance optimizations
+4. **Transaction Support**: Atomic operations across multiple tables
+5. **Eager Loading**: Efficient data fetching with joins
 
 ### Developer Experience
 1. **TypeScript Support**: Type safety and better IDE support
-2. **Modern Testing**: Comprehensive test suite with Mocha/Chai
-3. **Hot Reloading**: Next.js development server
-4. **ESLint Integration**: Code quality enforcement
+2. **Schema Validation**: Runtime data validation with detailed error messages
+3. **Duplicate Handling**: Graceful handling of duplicate labels (edge case)
+4. **Modern Testing**: Comprehensive test suite with isolated test databases
+5. **Hot Reloading**: Next.js development server with auto-refresh
 
-### Architecture Improvements
-1. **Next.js App Router**: Modern routing with server components
-2. **API Route Handlers**: Clean separation of concerns
-3. **Modular Database Layer**: Reusable connection and query modules
-4. **Error Handling**: Consistent error responses across APIs
+### Data Integrity & Validation
+1. **Schema Definitions**: Structured table schemas with constraints and validation
+2. **Foreign Key Constraints**: Enforced at database level with cascade deletes
+3. **Check Constraints**: Confidence score validation (0.0-1.0)
+4. **Unique Constraints**: Prevent duplicate annotations and filenames
+5. **Transaction Rollback**: Automatic cleanup on operation failures
 
-### Data Integrity
-1. **Foreign Key Constraints**: Enforced at database level
-2. **Check Constraints**: Confidence score validation (0.0-1.0)
-3. **Unique Constraints**: Prevent duplicate annotations
-4. **Cascade Deletes**: Automatic cleanup of related records
+### Advanced Features
+1. **Custom ORM Methods**: Table-specific query methods (findWithLabels, etc.)
+2. **Usage Statistics**: Label usage tracking with confidence averages
+3. **Search Functionality**: Full-text search across labels and descriptions
+4. **Health Monitoring**: Database connection health checks and diagnostics
+5. **Configuration Management**: Centralized database configuration with environment support
 
 ## Development Workflow
 
@@ -296,6 +467,74 @@ npm start                    # Start production server
 ```
 
 ## Common Development Patterns
+
+## Common Development Patterns
+
+### Data Access Layer Usage
+```javascript
+// Using the data access layer
+import { getAllImages, createImage } from '@/lib/data-access/images';
+import { createLabel } from '@/lib/data-access/labels';
+
+// Get all images with labels (eager loading)
+const images = await getAllImages();
+
+// Create image with validation
+const newImage = await createImage({
+  filename: 'photo.jpg',
+  original_name: 'my-photo.jpg',
+  file_path: 'public/uploads/photo.jpg',
+  file_size: 123456,
+  mime_type: 'image/jpeg'
+});
+
+// Create label with duplicate handling
+const label = await createLabel({
+  label_name: 'cat',
+  label_description: 'Domestic feline'
+});
+```
+
+### ORM Proxy Usage
+```javascript
+// Direct proxy usage for complex queries
+import proxy from '@/lib/database/proxy';
+
+// Transaction with multiple operations
+const result = proxy.transaction(() => {
+  const image = proxy.images.create(imageData);
+  const annotation = proxy.annotations.create({
+    image_id: image.image_id,
+    label_id: labelId,
+    confidence: 0.95
+  });
+  return { image, annotation };
+});
+```
+
+### Schema Validation
+```javascript
+// Automatic validation through data access layer
+try {
+  await createImage({
+    filename: '', // Invalid - empty filename
+    file_size: -1  // Invalid - negative size
+  });
+} catch (error) {
+  // Error: Validation failed: filename is required, file_size must be positive
+}
+```
+
+### Migration System Usage
+```javascript
+// Run migrations
+npm run db:migrate
+
+// Check migration status
+const { getMigrationStatus } = require('./database/migrations/run-migrations');
+const status = getMigrationStatus();
+console.log(`Applied: ${status.appliedMigrations.length}, Pending: ${status.pendingMigrations.length}`);
+```
 
 ### Database Operations
 ```javascript
@@ -496,7 +735,7 @@ Full AI usage documentation available in project repository.
 - **Repository:** https://github.com/Test-Plus-XD/Software-Engineering-Git-Assignment
 - **Developer:** NG Yu Ham Baldwin (Baldwon0xd@gmail.com)
 - **Course:** Software Engineering and Professional Practice 2025-2026
-- **Institution:** Hong Kong Polytechnic University
+- **Institution:** Hong Kong College of Technology
 - **Lecturer:** Beeno Tung
 
 ## Version History

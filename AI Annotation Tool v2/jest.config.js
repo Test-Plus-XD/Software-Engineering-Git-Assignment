@@ -32,6 +32,9 @@ const customJestConfig = {
     transform: {
         '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
     },
+    transformIgnorePatterns: [
+        'node_modules/(?!(msw|@bundled-es-modules|until-async)/)',
+    ],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
     testTimeout: 10000,
 }

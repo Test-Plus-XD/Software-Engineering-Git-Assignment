@@ -6,6 +6,44 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 
+// Mock BroadcastChannel for MSW
+global.BroadcastChannel = class MockBroadcastChannel {
+    constructor(name) {
+        this.name = name
+    }
+    postMessage() { }
+    close() { }
+    addEventListener() { }
+    removeEventListener() { }
+}
+
+// Mock WritableStream for MSW
+global.WritableStream = class MockWritableStream {
+    constructor() {
+        this.locked = false
+    }
+    getWriter() {
+        return {
+            write: jest.fn(),
+            close: jest.fn(),
+            abort: jest.fn(),
+        }
+    }
+}
+
+// Mock ReadableStream for MSW
+global.ReadableStream = class MockReadableStream {
+    constructor() {
+        this.locked = false
+    }
+    getReader() {
+        return {
+            read: jest.fn().mockResolvedValue({ done: true }),
+            cancel: jest.fn(),
+        }
+    }
+}
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
     useRouter() {

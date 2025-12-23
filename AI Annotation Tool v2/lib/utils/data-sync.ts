@@ -4,26 +4,26 @@
  * Includes event-based updates and optimistic UI patterns
  */
 
+import React from 'react'
+
+type EventCallback = (data: any) => void
+type UnsubscribeFunction = () => void
+
 /**
  * Simple event emitter for data synchronization
  */
 class DataSyncEmitter {
-    constructor() {
-        this.listeners = new Map()
-    }
+    private listeners = new Map<string, Set<EventCallback>>()
 
     /**
      * Subscribe to data update events
-     * @param {string} event - Event name
-     * @param {Function} callback - Callback function
-     * @returns {Function} - Unsubscribe function
      */
-    on(event, callback) {
+    on(event: string, callback: EventCallback): UnsubscribeFunction {
         if (!this.listeners.has(event)) {
             this.listeners.set(event, new Set())
         }
 
-        this.listeners.get(event).add(callback)
+        this.listeners.get(event)!.add(callback)
 
         // Return unsubscribe function
         return () => {
@@ -39,10 +39,8 @@ class DataSyncEmitter {
 
     /**
      * Emit data update event
-     * @param {string} event - Event name
-     * @param {*} data - Event data
      */
-    emit(event, data) {
+    emit(event: string, data: any): void {
         const eventListeners = this.listeners.get(event)
         if (eventListeners) {
             eventListeners.forEach(callback => {
@@ -57,16 +55,15 @@ class DataSyncEmitter {
 
     /**
      * Remove all listeners for an event
-     * @param {string} event - Event name
      */
-    off(event) {
+    off(event: string): void {
         this.listeners.delete(event)
     }
 
     /**
      * Remove all listeners
      */
-    clear() {
+    clear(): void {
         this.listeners.clear()
     }
 }
@@ -89,38 +86,51 @@ export const DATA_SYNC_EVENTS = {
     UPLOAD_PROGRESS: 'upload:progress',
     UPLOAD_COMPLETED: 'upload:completed',
     UPLOAD_FAILED: 'upload:failed'
-}
+} as const
+
+type DataSyncEvent = typeof DATA_SYNC_EVENTS[keyof typeof DATA_SYNC_EVENTS]
 
 /**
  * React hook for subscribing to data sync events
- * @param {string} event - Event name to listen to
- * @param {Function} callback - Callback function
- * @param {Array} deps - Dependencies array
  */
-export function useDataSync(event, callback, deps = []) {
+export function useDataSync(event: DataSyncEvent, callback: EventCallback, deps: React.DependencyList = []): void {
     React.useEffect(() => {
         const unsubscribe = dataSyncEmitter.on(event, callback)
         return unsubscribe
     }, deps)
 }
 
+interface OptimisticUpdate<T = any> {
+    originalData: T
+    optimisticData: T
+    timestamp: number
+}
+
+interface OptimisticUpdateResult<T = any> {
+    data: T
+    setData: React.Dispatch<React.SetStateAction<T>>
+    optimisticUpdates: [string, OptimisticUpdate<T>][]
+    applyOptimisticUpdate: (id: string, updateFn: (data: T) => T, asyncOperation: () => Promise<T>) => Promise<T>
+    rollbackUpdate: (id: string) => void
+    clearOptimisticUpdates: () => void
+    hasOptimisticUpdates: boolean
+}
+
 /**
  * React hook for managing optimistic updates
- * @param {*} initialData - Initial data state
- * @returns {Object} - Optimistic update utilities
  */
-export function useOptimisticUpdates(initialData = null) {
-    const [data, setData] = React.useState(initialData)
-    const [optimisticUpdates, setOptimisticUpdates] = React.useState(new Map())
+export function useOptimisticUpdates<T = any>(initialData: T | null = null): OptimisticUpdateResult<T> {
+    const [data, setData] = React.useState<T>(initialData as T)
+    const [optimisticUpdates, setOptimisticUpdates] = React.useState(new Map<string, OptimisticUpdate<T>>())
 
     /**
      * Apply optimistic update
-     * @param {string} id - Unique ID for this update
-     * @param {Function} updateFn - Function to apply optimistic update
-     * @param {Function} asyncOperation - Async operation to perform
-     * @returns {Promise} - Promise that resolves when operation completes
      */
-    const applyOptimisticUpdate = React.useCallback(async (id, updateFn, asyncOperation) => {
+    const applyOptimisticUpdate = React.useCallback(async (
+        id: string,
+        updateFn: (data: T) => T,
+        asyncOperation: () => Promise<T>
+    ): Promise<T> => {
         // Store original data for rollback
         const originalData = data
 
@@ -167,9 +177,8 @@ export function useOptimisticUpdates(initialData = null) {
 
     /**
      * Rollback specific optimistic update
-     * @param {string} id - Update ID to rollback
      */
-    const rollbackUpdate = React.useCallback((id) => {
+    const rollbackUpdate = React.useCallback((id: string): void => {
         const update = optimisticUpdates.get(id)
         if (update) {
             setData(update.originalData)
@@ -184,7 +193,7 @@ export function useOptimisticUpdates(initialData = null) {
     /**
      * Clear all optimistic updates and rollback to original data
      */
-    const clearOptimisticUpdates = React.useCallback(() => {
+    const clearOptimisticUpdates = React.useCallback((): void => {
         // Find the earliest original data
         let earliestOriginalData = data
         let earliestTimestamp = Date.now()
@@ -211,13 +220,20 @@ export function useOptimisticUpdates(initialData = null) {
     }
 }
 
+interface AutoRefreshOptions {
+    debounceMs?: number
+    maxRefreshRate?: number
+    enabled?: boolean
+}
+
 /**
  * React hook for automatic data refresh
- * @param {Function} refreshFn - Function to call for refresh
- * @param {Array} events - Events that should trigger refresh
- * @param {Object} options - Refresh options
  */
-export function useAutoRefresh(refreshFn, events = [], options = {}) {
+export function useAutoRefresh(
+    refreshFn: () => void,
+    events: DataSyncEvent[] = [],
+    options: AutoRefreshOptions = {}
+): void {
     const {
         debounceMs = 500,
         maxRefreshRate = 5000, // Maximum one refresh per 5 seconds
@@ -225,7 +241,7 @@ export function useAutoRefresh(refreshFn, events = [], options = {}) {
     } = options
 
     const lastRefreshRef = React.useRef(0)
-    const timeoutRef = React.useRef(null)
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
     const debouncedRefresh = React.useCallback(() => {
         if (!enabled) return
@@ -290,71 +306,63 @@ export function useAutoRefresh(refreshFn, events = [], options = {}) {
 export const dataOperations = {
     /**
      * Notify that an image was added
-     * @param {Object} image - Added image data
      */
-    notifyImageAdded(image) {
+    notifyImageAdded(image: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.IMAGE_ADDED, image)
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.IMAGES_REFRESHED, { reason: 'image_added', image })
     },
 
     /**
      * Notify that an image was updated
-     * @param {Object} image - Updated image data
      */
-    notifyImageUpdated(image) {
+    notifyImageUpdated(image: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.IMAGE_UPDATED, image)
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.IMAGES_REFRESHED, { reason: 'image_updated', image })
     },
 
     /**
      * Notify that an image was deleted
-     * @param {number} imageId - Deleted image ID
      */
-    notifyImageDeleted(imageId) {
+    notifyImageDeleted(imageId: number): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.IMAGE_DELETED, { imageId })
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.IMAGES_REFRESHED, { reason: 'image_deleted', imageId })
     },
 
     /**
      * Notify that a label was added
-     * @param {Object} label - Added label data
      */
-    notifyLabelAdded(label) {
+    notifyLabelAdded(label: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.LABEL_ADDED, label)
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.LABELS_REFRESHED, { reason: 'label_added', label })
     },
 
     /**
      * Notify that a label was updated
-     * @param {Object} label - Updated label data
      */
-    notifyLabelUpdated(label) {
+    notifyLabelUpdated(label: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.LABEL_UPDATED, label)
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.LABELS_REFRESHED, { reason: 'label_updated', label })
     },
 
     /**
      * Notify that a label was deleted
-     * @param {number} labelId - Deleted label ID
      */
-    notifyLabelDeleted(labelId) {
+    notifyLabelDeleted(labelId: number): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.LABEL_DELETED, { labelId })
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.LABELS_REFRESHED, { reason: 'label_deleted', labelId })
     },
 
     /**
      * Notify upload progress
-     * @param {Object} progress - Upload progress data
      */
-    notifyUploadProgress(progress) {
+    notifyUploadProgress(progress: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.UPLOAD_PROGRESS, progress)
     },
 
     /**
      * Notify upload completion
-     * @param {Object} result - Upload result data
      */
-    notifyUploadCompleted(result) {
+    notifyUploadCompleted(result: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.UPLOAD_COMPLETED, result)
         // Also trigger image refresh since a new image was added
         this.notifyImageAdded(result)
@@ -362,17 +370,8 @@ export const dataOperations = {
 
     /**
      * Notify upload failure
-     * @param {Object} error - Upload error data
      */
-    notifyUploadFailed(error) {
+    notifyUploadFailed(error: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.UPLOAD_FAILED, error)
     }
-}
-
-// Export for React usage
-if (typeof React !== 'undefined') {
-    const React = require('react')
-    module.exports.useDataSync = useDataSync
-    module.exports.useOptimisticUpdates = useOptimisticUpdates
-    module.exports.useAutoRefresh = useAutoRefresh
 }

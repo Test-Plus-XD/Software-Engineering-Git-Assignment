@@ -1,3 +1,5 @@
+'use client'
+
 import WaveBackground from "./components/WaveBackground";
 import ImageGallery from "./components/ImageGallery";
 import UploadForm from "./components/UploadForm";
@@ -58,15 +60,7 @@ export default function Home() {
                 <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
                   Upload New Images
                 </h3>
-                <UploadForm
-                  onUploadSuccess={(image: any) => {
-                    console.log('Upload successful:', image);
-                    // Refresh gallery or show success message
-                  }}
-                  onUploadError={(error: any) => {
-                    console.error('Upload failed:', error);
-                  }}
-                />
+                <UploadForm />
               </div>
             </section>
 

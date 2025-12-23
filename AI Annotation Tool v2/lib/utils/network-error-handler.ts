@@ -4,20 +4,30 @@
  * Includes user-friendly error messages and exponential backoff
  */
 
+import React from 'react'
+
+interface RetryConfig {
+    maxRetries?: number
+    baseDelay?: number
+    maxDelay?: number
+    backoffFactor?: number
+    retryCondition?: (error: Error | null, response: Response | null) => boolean
+}
+
 /**
  * Enhanced fetch wrapper with error handling and retry logic
- * @param {string} url - The URL to fetch
- * @param {object} options - Fetch options
- * @param {object} retryConfig - Retry configuration
- * @returns {Promise} - Enhanced fetch promise
  */
-export async function fetchWithRetry(url, options = {}, retryConfig = {}) {
+export async function fetchWithRetry(
+    url: string,
+    options: RequestInit = {},
+    retryConfig: RetryConfig = {}
+): Promise<Response> {
     const {
         maxRetries = 3,
         baseDelay = 1000,
         maxDelay = 10000,
         backoffFactor = 2,
-        retryCondition = (error, response) => {
+        retryCondition = (error: Error | null, response: Response | null) => {
             // Retry on network errors or 5xx server errors
             if (error && (error.name === 'TypeError' || error.message.includes('fetch'))) {
                 return true
@@ -33,16 +43,17 @@ export async function fetchWithRetry(url, options = {}, retryConfig = {}) {
         }
     } = retryConfig
 
-    let lastError = null
-    let lastResponse = null
+    let lastError: Error | null = null
+    let lastResponse: Response | null = null
+    let timeoutId: NodeJS.Timeout
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
             // Add timeout to prevent hanging requests
             const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+            timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
-            const fetchOptions = {
+            const fetchOptions: RequestInit = {
                 ...options,
                 signal: controller.signal
             }
@@ -75,8 +86,8 @@ export async function fetchWithRetry(url, options = {}, retryConfig = {}) {
             )
 
         } catch (error) {
-            clearTimeout(timeoutId)
-            lastError = error
+            clearTimeout(timeoutId!)
+            lastError = error as Error
 
             // If it's already a NetworkError, just re-throw it
             if (error instanceof NetworkError) {
@@ -84,7 +95,7 @@ export async function fetchWithRetry(url, options = {}, retryConfig = {}) {
             }
 
             // Handle abort/timeout errors
-            if (error.name === 'AbortError') {
+            if ((error as Error).name === 'AbortError') {
                 throw new NetworkError(
                     'Request timed out. Please check your connection and try again.',
                     408,
@@ -94,7 +105,7 @@ export async function fetchWithRetry(url, options = {}, retryConfig = {}) {
             }
 
             // Check if we should retry
-            if (attempt < maxRetries && retryCondition(error, null)) {
+            if (attempt < maxRetries && retryCondition(error as Error, null)) {
                 const delay = Math.min(baseDelay * Math.pow(backoffFactor, attempt), maxDelay)
                 await new Promise(resolve => setTimeout(resolve, delay))
                 continue
@@ -102,7 +113,7 @@ export async function fetchWithRetry(url, options = {}, retryConfig = {}) {
 
             // Transform generic errors into NetworkErrors
             throw new NetworkError(
-                getErrorMessage(error),
+                getErrorMessage(error as Error),
                 0,
                 null,
                 attempt
@@ -118,7 +129,13 @@ export async function fetchWithRetry(url, options = {}, retryConfig = {}) {
  * Custom Network Error class with enhanced error information
  */
 export class NetworkError extends Error {
-    constructor(message, status = 0, response = null, attempts = 0) {
+    public status: number
+    public response: Response | null
+    public attempts: number
+    public timestamp: string
+    public userFriendlyMessage: string
+
+    constructor(message: string, status = 0, response: Response | null = null, attempts = 0) {
         super(message)
         this.name = 'NetworkError'
         this.status = status
@@ -131,11 +148,8 @@ export class NetworkError extends Error {
 
 /**
  * Get user-friendly error message based on error type and status
- * @param {string} message - Original error message
- * @param {number} status - HTTP status code
- * @returns {string} - User-friendly error message
  */
-function getUserFriendlyMessage(message, status) {
+function getUserFriendlyMessage(message: string, status: number): string {
     // Network/connection errors
     if (message.includes('Failed to fetch') || message.includes('NetworkError') || status === 0) {
         return 'Network connection failed. Please check your internet connection and try again.'
@@ -187,11 +201,9 @@ function getUserFriendlyMessage(message, status) {
 
 /**
  * Get error message from various error types
- * @param {Error} error - The error object
- * @returns {string} - Error message
  */
-function getErrorMessage(error) {
-    if (error.message) {
+function getErrorMessage(error: Error | string | unknown): string {
+    if (error instanceof Error && error.message) {
         return error.message
     }
     if (typeof error === 'string') {
@@ -200,11 +212,18 @@ function getErrorMessage(error) {
     return 'Unknown error occurred'
 }
 
+interface APIClientOptions extends RequestInit {
+    headers?: Record<string, string>
+}
+
 /**
  * API client with built-in error handling
  */
 export class APIClient {
-    constructor(baseURL = '', defaultOptions = {}) {
+    private baseURL: string
+    private defaultOptions: APIClientOptions
+
+    constructor(baseURL = '', defaultOptions: APIClientOptions = {}) {
         this.baseURL = baseURL
         this.defaultOptions = {
             headers: {
@@ -215,9 +234,9 @@ export class APIClient {
         }
     }
 
-    async request(endpoint, options = {}) {
+    async request(endpoint: string, options: APIClientOptions = {}): Promise<any> {
         const url = `${this.baseURL}${endpoint}`
-        const mergedOptions = {
+        const mergedOptions: RequestInit = {
             ...this.defaultOptions,
             ...options,
             headers: {
@@ -256,11 +275,11 @@ export class APIClient {
     }
 
     // Convenience methods for common HTTP verbs
-    async get(endpoint, options = {}) {
+    async get(endpoint: string, options: APIClientOptions = {}): Promise<any> {
         return this.request(endpoint, { ...options, method: 'GET' })
     }
 
-    async post(endpoint, data, options = {}) {
+    async post(endpoint: string, data: any, options: APIClientOptions = {}): Promise<any> {
         const body = data instanceof FormData ? data : JSON.stringify(data)
         const headers = data instanceof FormData
             ? { ...options.headers } // Don't set Content-Type for FormData
@@ -274,7 +293,7 @@ export class APIClient {
         })
     }
 
-    async put(endpoint, data, options = {}) {
+    async put(endpoint: string, data: any, options: APIClientOptions = {}): Promise<any> {
         return this.request(endpoint, {
             ...options,
             method: 'PUT',
@@ -282,7 +301,7 @@ export class APIClient {
         })
     }
 
-    async delete(endpoint, options = {}) {
+    async delete(endpoint: string, options: APIClientOptions = {}): Promise<any> {
         return this.request(endpoint, { ...options, method: 'DELETE' })
     }
 }
@@ -290,20 +309,31 @@ export class APIClient {
 // Default API client instance
 export const apiClient = new APIClient()
 
+interface AsyncOperationState<T> {
+    data: T | null
+    loading: boolean
+    error: NetworkError | null
+}
+
+interface AsyncOperationResult<T> extends AsyncOperationState<T> {
+    execute: (...args: any[]) => Promise<T>
+    retry: () => Promise<T>
+}
+
 /**
  * Hook for handling async operations with error states
- * @param {Function} asyncFn - Async function to execute
- * @param {Array} deps - Dependencies array (like useEffect)
- * @returns {Object} - State object with data, loading, error, and retry function
  */
-export function useAsyncOperation(asyncFn, deps = []) {
-    const [state, setState] = React.useState({
+export function useAsyncOperation<T = any>(
+    asyncFn: (...args: any[]) => Promise<T>,
+    deps: React.DependencyList = []
+): AsyncOperationResult<T> {
+    const [state, setState] = React.useState<AsyncOperationState<T>>({
         data: null,
         loading: false,
         error: null
     })
 
-    const execute = React.useCallback(async (...args) => {
+    const execute = React.useCallback(async (...args: any[]): Promise<T> => {
         setState(prev => ({ ...prev, loading: true, error: null }))
 
         try {
@@ -317,7 +347,7 @@ export function useAsyncOperation(asyncFn, deps = []) {
         }
     }, deps)
 
-    const retry = React.useCallback(() => {
+    const retry = React.useCallback((): Promise<T> => {
         return execute()
     }, [execute])
 
@@ -326,11 +356,4 @@ export function useAsyncOperation(asyncFn, deps = []) {
         execute,
         retry
     }
-}
-
-// Export for React usage
-if (typeof React !== 'undefined') {
-    // Only import React if it's available (for React components)
-    const React = require('react')
-    module.exports.useAsyncOperation = useAsyncOperation
 }

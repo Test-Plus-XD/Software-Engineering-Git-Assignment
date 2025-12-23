@@ -3,11 +3,31 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
+interface ImageData {
+    image_id: number
+    filename: string
+    original_name?: string
+    file_path: string
+    file_size: number
+    mime_type: string
+    uploaded_at?: string
+    upload_date?: string
+    labels: string[]
+    confidences?: number[]
+    label_count?: number
+}
+
+interface ImageCardProps {
+    image: ImageData
+    onLabelClick?: (label: string) => void
+    className?: string
+}
+
 /**
  * ImageCard component displays individual images with labels and loading states
  * Supports responsive design and interactive label clicking
  */
-export default function ImageCard({ image, onLabelClick, className = '' }) {
+export default function ImageCard({ image, onLabelClick, className = '' }: ImageCardProps) {
     const [isLoading, setIsLoading] = useState(true)
     const [hasError, setHasError] = useState(false)
     const [showDetails, setShowDetails] = useState(false)
@@ -36,13 +56,13 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
         setHasError(true)
     }
 
-    const handleLabelClick = (label) => {
+    const handleLabelClick = (label: string) => {
         if (onLabelClick) {
             onLabelClick(label)
         }
     }
 
-    const formatFileSize = (bytes) => {
+    const formatFileSize = (bytes: number): string => {
         if (bytes === 0) return '0 B'
         const k = 1024
         const sizes = ['B', 'KB', 'MB', 'GB']
@@ -50,7 +70,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
     }
 
-    const formatDate = (dateString) => {
+    const formatDate = (dateString: string): string => {
         const date = new Date(dateString)
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
@@ -59,15 +79,15 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
         })
     }
 
-    const getFileType = (mimeType) => {
+    const getFileType = (mimeType: string): string => {
         return mimeType.split('/')[1].toUpperCase()
     }
 
-    const getResponsiveClasses = () => {
+    const getResponsiveClasses = (): string => {
         return 'w-full max-w-sm md:max-w-md lg:max-w-md'
     }
 
-    const getTouchFeedbackClasses = () => {
+    const getTouchFeedbackClasses = (): string => {
         return 'active:scale-95 active:shadow-sm touch-manipulation'
     }
 
@@ -101,7 +121,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
                     <>
                         <Image
                             src={image.file_path}
-                            alt={image.original_name}
+                            alt={image.original_name || image.filename}
                             fill
                             className="object-cover"
                             onLoad={handleImageLoad}
@@ -115,7 +135,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
                                 <div className="text-center p-4">
                                     <p>{formatFileSize(image.file_size)}</p>
                                     <p>{getFileType(image.mime_type)}</p>
-                                    <p>{formatDate(image.uploaded_at)}</p>
+                                    <p>{formatDate(image.uploaded_at || image.upload_date || '')}</p>
                                 </div>
                             </div>
                         )}
@@ -139,17 +159,17 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
                     <>
                         {/* Label Count */}
                         <div className="mb-2">
-                            {image.label_count === 0 ? (
+                            {(image.label_count === 0 || image.labels.length === 0) ? (
                                 <span className="text-gray-500 text-sm">No labels</span>
                             ) : (
                                 <span className="text-gray-700 text-sm font-medium">
-                                    {image.label_count === 1 ? '1 label' : `${image.label_count} labels`}
+                                    {image.labels.length === 1 ? '1 label' : `${image.labels.length} labels`}
                                 </span>
                             )}
                         </div>
 
                         {/* Labels with Confidence Scores */}
-                        {image.labels.length > 0 && (
+                        {image.labels && image.labels.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {image.labels.map((label, index) => (
                                     <div
@@ -159,7 +179,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }) {
                                         onClick={() => handleLabelClick(label)}
                                     >
                                         <span>{label}</span>
-                                        {image.confidences[index] !== undefined && (
+                                        {image.confidences && image.confidences[index] !== undefined && (
                                             <span className="ml-1 text-blue-600 font-semibold">
                                                 {Math.round(image.confidences[index] * 100)}%
                                             </span>

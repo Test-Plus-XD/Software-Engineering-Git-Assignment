@@ -5,7 +5,6 @@
   "reporter": "spec",
   "exit": true,
   "bail": false,
-  "require": [],
   "ui": "bdd",
   "colors": true,
   "slow": 2000

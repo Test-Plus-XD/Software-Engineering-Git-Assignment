@@ -274,50 +274,97 @@ function getDatabase() {
 **Base URL:** `http://localhost:3000/api`
 
 ### Images API (`/api/images`)
-- `GET /api/images` - Get all images with labels
-- `GET /api/images/[id]` - Get specific image
-- `POST /api/images` - Upload new image
-- `PUT /api/images/[id]` - Update image metadata
-- `DELETE /api/images/[id]` - Delete image and file
+
+**GET /api/images** - Get paginated images with labels
+- Query: `?page=1&limit=10`
+- Response: `{ success, data: [images], pagination }`
+- Uses data access layer with eager loading
+
+**POST /api/images** - Upload image to Firebase Storage
+- Content-Type: `multipart/form-data` or `application/json`
+- Headers: `Authorization: Bearer <token>` (for uploads)
+- Validates: file type (jpeg/png/gif/webp), size (10MB max)
+- Uploads to Firebase via Vercel API, creates DB record
+
+**GET /api/images/[id]** - Get specific image with annotations
+
+**PUT /api/images/[id]** - Update image metadata
+
+**DELETE /api/images/[id]** - Delete image (cascades to annotations)
+- Optional: Deletes from Firebase Storage if token provided
 
 ### Labels API (`/api/labels`)
-- `GET /api/labels` - Get all labels with usage stats
-- `GET /api/labels/[id]` - Get specific label
-- `POST /api/labels` - Create new label
-- `PUT /api/labels/[id]` - Update label
-- `DELETE /api/labels/[id]` - Delete label
 
-### Request/Response Format
+**GET /api/labels** - Get all labels with usage statistics
+
+**POST /api/labels** - Create label (handles duplicates gracefully)
+- Validates and trims label_name (max 100 chars)
+
+**GET /api/labels/[id]** - Get specific label
+
+**PUT /api/labels/[id]** - Update label
+
+**DELETE /api/labels/[id]** - Delete label (cascades to annotations)
+
+### Firebase Storage Integration
+
+**Utility Module:** `lib/utils/firebase-storage.js`
+
+Functions:
+- `uploadToFirebase(file, originalName, folder, token)` - Upload via Vercel API
+- `deleteFromFirebase(filePath, token)` - Delete via Vercel API
+- `validateImageType(mimeType)` - Validate file types
+- `validateFileSize(fileSize, maxSize)` - Check size limits
+
+Vercel API:
+- Upload: `POST /API/Images/upload?folder={folder}`
+- Delete: `DELETE /API/Images/delete?folder={folder}&fileName={fileName}`
+
+### Request/Response Examples
+
 ```javascript
-// POST /api/images - Upload image
-Content-Type: multipart/form-data
-Body: { image: File }
+// GET /api/images?page=1&limit=10
+Response: {
+  success: true,
+  data: [{
+    image_id: 1,
+    filename: "annotations/1234567890_photo.jpg",
+    file_path: "https://firebasestorage.googleapis.com/...",
+    labels: ["cat", "pet"],
+    label_count: 2
+  }],
+  pagination: {
+    page: 1, limit: 10, totalImages: 25, totalPages: 3,
+    hasNextPage: true, hasPrevPage: false
+  }
+}
+
+// POST /api/images (multipart/form-data)
+Headers: { "Authorization": "Bearer <token>" }
+Body: FormData with 'image' field
 
 Response: {
   success: true,
   data: {
     image_id: 1,
-    filename: "img_20231223_001.jpg",
-    original_name: "my-photo.jpg",
+    filename: "annotations/1234567890_photo.jpg",
+    file_path: "https://firebasestorage.googleapis.com/...",
     file_size: 245760,
     mime_type: "image/jpeg"
-  }
+  },
+  firebaseUrl: "https://firebasestorage.googleapis.com/..."
 }
 
-// POST /api/labels - Create label
-Content-Type: application/json
-Body: {
-  label_name: "cat",
-  label_description: "Domestic feline animals"
-}
+// POST /api/labels
+Body: { label_name: "cat", label_description: "Domestic feline" }
 
 Response: {
   success: true,
   data: {
     label_id: 1,
     label_name: "cat",
-    label_description: "Domestic feline animals",
-    created_at: "2023-12-23T10:30:00.000Z"
+    label_description: "Domestic feline",
+    created_at: "2025-12-23T10:30:00.000Z"
   }
 }
 ```
@@ -399,6 +446,34 @@ npm run test:watch
 npm run test:ci
 ```
 
+## Phase 4 Completion: API Routes with Firebase Storage
+
+### Completed Features (Phase 4)
+
+**Images API - Full CRUD**
+- ✅ GET /api/images with pagination
+- ✅ POST /api/images with Firebase Storage upload
+- ✅ GET /api/images/[id] for individual retrieval
+- ✅ PUT /api/images/[id] for metadata updates
+- ✅ DELETE /api/images/[id] with cascade deletion
+
+**Labels API - Full CRUD**
+- ✅ GET /api/labels with usage statistics
+- ✅ POST /api/labels with duplicate handling
+- ✅ GET /api/labels/[id] for individual retrieval
+- ✅ PUT /api/labels/[id] for label updates
+- ✅ DELETE /api/labels/[id] with cascade deletion
+
+**Firebase Storage Integration**
+- ✅ Upload/delete utilities via Vercel API
+- ✅ File validation (type, size)
+- ✅ Graceful error handling
+
+**Testing & Validation**
+- ✅ Comprehensive test suites
+- ✅ Edge case testing
+- ✅ Proper HTTP status codes
+
 ## Key Features & Improvements over v1
 
 ### Architecture Enhancements
@@ -407,6 +482,8 @@ npm run test:ci
 3. **Migration System**: Version-controlled schema changes with rollback capability
 4. **Base Class Pattern**: Reduced code duplication through common CRUD operations
 5. **Comprehensive Testing**: Test-driven development with failing tests first
+6. **Firebase Storage Integration**: Centralized file storage via Vercel API
+7. **Complete REST API**: Full CRUD operations for images and labels
 
 ### Performance Enhancements
 1. **better-sqlite3**: Synchronous operations, 2-3x faster than sqlite3
@@ -740,12 +817,12 @@ Full AI usage documentation available in project repository.
 
 ## Version History
 
-- **v2.0.0** (2023-12-23) - Complete rewrite with Next.js and better-sqlite3
-- **v1.0.0** (2023-12-20) - Initial Express.js implementation
+- **v2.0.0** (2025-12-23) - Complete rewrite with Next.js and better-sqlite3
+- **v1.0.0** (2025-12-20) - Initial Express.js implementation
 
 ## Last Updated
 
-**Date:** 2023-12-23  
-**Version:** 2.0.0  
-**Status:** Assignment 2 - Database Implementation Complete  
-**Next:** Frontend UI Development
+**Date:** 2025-12-23
+**Version:** 2.0.0
+**Status:** Phase 4 - API Routes with Firebase Storage Integration Complete
+**Next:** Phase 5 - React Frontend Components

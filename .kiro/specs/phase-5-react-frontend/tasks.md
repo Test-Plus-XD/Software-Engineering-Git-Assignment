@@ -165,8 +165,11 @@ This implementation plan converts the Phase 5 design into a series of TDD-focuse
   - Tests now pass
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 8.3_
 
-- [ ] 6. Create custom form validation hook
-- [ ] 6.1 Write failing tests for useFormValidation hook
+- [-] 6. Create custom form validation hook
+
+
+- [-] 6.1 Write failing tests for useFormValidation hook
+
   - **Test provides real-time validation feedback**
   - **Test prevents submission when validation fails**
   - **Test allows submission when validation passes**

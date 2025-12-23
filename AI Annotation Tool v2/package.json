@@ -6,12 +6,28 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node test/run-tests.js",
+    "test:watch": "mocha test/**/*.test.js --timeout 5000 --watch",
+    "test:db": "mocha test/database.test.js --timeout 10000",
+    "test:ci": "jest --ci --coverage",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "db:init": "node database/init.js",
+    "db:migrate": "node database/migrations/run-migrations.js",
+    "db:seed": "node database/seeds/run-seeds.js",
+    "db:reset": "rm -f database/annotations.db && npm run db:init",
+    "db:hardreset": "rm -f database/annotations.db && npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
+    "better-sqlite3": "^12.5.0",
+    "better-sqlite3-proxy": "^2.11.3",
     "next": "16.1.0",
+    "npm-check-updates": "^19.2.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "sqlite3": "^5.1.6",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -19,8 +35,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "chai": "^4.3.10",
     "eslint": "^9",
     "eslint-config-next": "16.1.0",
+    "mocha": "^11.7.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -1,14 +1,16 @@
 /**
  * Database connection module for AI Annotation Tool v2
- * Uses better-sqlite3 for synchronous SQLite operations
+ * Uses better-sqlite3 for synchronous SQLite operations with enhanced configuration
  */
 
 const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
-
-// Use test database path if in test environment
-const DB_PATH = process.env.TEST_DB_PATH || path.join(process.cwd(), 'database', 'annotations.db');
+const { 
+  getDatabasePath, 
+  ensureDatabaseDirectory, 
+  validateConfig, 
+  getConnectionOptions,
+  checkDatabaseHealth 
+} = require('./config');
 
 let db = null;
 
@@ -18,18 +20,45 @@ let db = null;
  */
 function getDatabase() {
   if (!db) {
-    // Ensure database directory exists
-    const dbDir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
+    try {
+      // Validate configuration before connecting
+      validateConfig();
+      
+      const { path: dbPath, options, pragmas } = getConnectionOptions();
+      
+      // Ensure database directory exists
+      ensureDatabaseDirectory(dbPath);
 
-    db = new Database(DB_PATH);
-    
-    // Enable foreign key constraints
-    db.pragma('foreign_keys = ON');
-    
-    console.log('Connected to SQLite database with better-sqlite3');
+      // Create database connection
+      db = new Database(dbPath, options.options);
+      
+      // Apply pragma settings
+      Object.entries(pragmas).forEach(([pragma, value]) => {
+        if (value !== null && value !== undefined) {
+          db.pragma(`${pragma} = ${value}`);
+        }
+      });
+      
+      console.log(`Connected to SQLite database: ${dbPath}`);
+      
+      // Perform health check
+      const health = checkDatabaseHealth(db);
+      if (!health.healthy) {
+        throw new Error(`Database health check failed: ${health.error}`);
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Database health check passed:', {
+          responseTime: `${health.responseTime}ms`,
+          tables: health.database.tables,
+          foreignKeys: health.database.foreignKeysEnabled
+        });
+      }
+      
+    } catch (error) {
+      console.error('Failed to connect to database:', error.message);
+      throw new Error(`Database connection failed: ${error.message}`);
+    }
   }
   
   return db;
@@ -64,7 +93,9 @@ function query(sql, params = []) {
     return stmt.all(params);
   } catch (error) {
     console.error('Query error:', error.message);
-    throw error;
+    console.error('SQL:', sql);
+    console.error('Params:', params);
+    throw new Error(`Database query failed: ${error.message}`);
   }
 }
 
@@ -81,7 +112,9 @@ function queryOne(sql, params = []) {
     return stmt.get(params);
   } catch (error) {
     console.error('QueryOne error:', error.message);
-    throw error;
+    console.error('SQL:', sql);
+    console.error('Params:', params);
+    throw new Error(`Database queryOne failed: ${error.message}`);
   }
 }
 
@@ -102,7 +135,9 @@ function run(sql, params = []) {
     };
   } catch (error) {
     console.error('Run error:', error.message);
-    throw error;
+    console.error('SQL:', sql);
+    console.error('Params:', params);
+    throw new Error(`Database run failed: ${error.message}`);
   }
 }
 
@@ -127,7 +162,8 @@ function exec(sql) {
     database.exec(sql);
   } catch (error) {
     console.error('Exec error:', error.message);
-    throw error;
+    console.error('SQL:', sql);
+    throw new Error(`Database exec failed: ${error.message}`);
   }
 }
 
@@ -136,15 +172,34 @@ function exec(sql) {
  * @returns {boolean} True if database file exists
  */
 function databaseExists() {
-  return fs.existsSync(DB_PATH);
+  const fs = require('fs');
+  return fs.existsSync(getDatabaseFilePath());
 }
 
 /**
  * Get database file path
  * @returns {string} Database file path
  */
-function getDatabasePath() {
-  return DB_PATH;
+function getDatabaseFilePath() {
+  const { getDatabasePath: getPath } = require('./config');
+  return getPath();
+}
+
+/**
+ * Get database connection health status
+ * @returns {Object} Health check results
+ */
+function getDatabaseHealth() {
+  try {
+    const database = getDatabase();
+    return checkDatabaseHealth(database);
+  } catch (error) {
+    return {
+      healthy: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
 }
 
 module.exports = {
@@ -156,5 +211,6 @@ module.exports = {
   transaction,
   exec,
   databaseExists,
-  getDatabasePath
+  getDatabasePath: getDatabaseFilePath,
+  getDatabaseHealth
 };

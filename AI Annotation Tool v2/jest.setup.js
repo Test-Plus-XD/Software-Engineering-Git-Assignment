@@ -44,6 +44,14 @@ global.ReadableStream = class MockReadableStream {
     }
 }
 
+// Mock TransformStream for MSW
+global.TransformStream = class MockTransformStream {
+    constructor() {
+        this.readable = new global.ReadableStream()
+        this.writable = new global.WritableStream()
+    }
+}
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
     useRouter() {

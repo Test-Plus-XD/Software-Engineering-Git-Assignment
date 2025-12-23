@@ -16,6 +16,15 @@ test/
 
 ## Running Tests
 
+### Prerequisites
+
+**Important**: The database must be initialized before running tests. The test runner will automatically initialize the database if it doesn't exist, but you can also initialize it manually:
+
+```bash
+# Initialize database with schema and seed data
+npm run db:init
+```
+
 ### All Tests
 ```bash
 npm test
@@ -33,7 +42,22 @@ npm run test:watch
 
 ### Direct Mocha (without database initialization)
 ```bash
+# Note: This bypasses automatic database initialization
+# Ensure database exists before running
 npx mocha test/**/*.test.js --timeout 10000
+```
+
+### Manual Database Management
+
+```bash
+# Initialize database
+npm run db:init
+
+# Reset database (removes existing data)
+npm run db:reset
+
+# Hard reset (removes database file and recreates)
+npm run db:hardreset
 ```
 
 ## Test Features

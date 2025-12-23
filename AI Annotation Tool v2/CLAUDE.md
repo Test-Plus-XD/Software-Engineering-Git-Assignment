@@ -56,6 +56,9 @@ AI Annotation Tool v2/
 │   ├── annotations.db           # SQLite database
 │   ├── init.js                  # Database initialization
 │   ├── migrations/              # Database migrations
+│   │   ├── tests/               # Migration system tests
+│   │   ├── run-migrations.js    # Migration runner
+│   │   └── 001_initial_schema.sql # Initial schema migration
 │   └── seeds/
 │       └── 001_sample_data.sql  # Sample data
 ├── test/                        # Test suite

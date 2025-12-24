@@ -7,10 +7,30 @@
 
 const { verifyIdToken } = require('../firebase-auth');
 
+// Mock fetch globally
+global.fetch = jest.fn();
+
 describe('Firebase Authentication Utility', () => {
+    beforeEach(() => {
+        fetch.mockClear();
+    });
+
     describe('verifyIdToken()', () => {
         test('should validate Firebase ID tokens successfully', async () => {
             const mockToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...';
+            const mockResponse = {
+                valid: true,
+                uid: 'abc123xyz',
+                email: 'john@example.com',
+                displayName: 'John Doe',
+                emailVerified: true,
+                photoURL: 'https://example.com/photo.jpg'
+            };
+
+            fetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockResponse)
+            });
 
             const result = await verifyIdToken(mockToken);
 
@@ -23,11 +43,30 @@ describe('Firebase Authentication Utility', () => {
         test('should reject invalid tokens', async () => {
             const invalidToken = 'invalid.token.here';
 
+            fetch.mockResolvedValueOnce({
+                ok: false,
+                status: 400,
+                json: () => Promise.resolve({ error: 'Invalid token format' })
+            });
+
             await expect(verifyIdToken(invalidToken)).rejects.toThrow();
         });
 
         test('should extract user information from verified tokens', async () => {
             const mockToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...';
+            const mockResponse = {
+                valid: true,
+                uid: 'abc123xyz',
+                email: 'john@example.com',
+                displayName: 'John Doe',
+                emailVerified: true,
+                photoURL: 'https://example.com/photo.jpg'
+            };
+
+            fetch.mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve(mockResponse)
+            });
 
             const result = await verifyIdToken(mockToken);
 
@@ -40,35 +79,33 @@ describe('Firebase Authentication Utility', () => {
         test('should handle token expiration gracefully', async () => {
             const expiredToken = 'expired.token.here';
 
+            fetch.mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                json: () => Promise.resolve({ error: 'Token expired' })
+            });
+
             await expect(verifyIdToken(expiredToken)).rejects.toThrow('Token expired');
         });
 
         test('should handle network errors gracefully', async () => {
-            // Mock network failure
-            const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
-
             const mockToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...';
 
-            await expect(verifyIdToken(mockToken)).rejects.toThrow('Network error');
+            fetch.mockRejectedValueOnce(new Error('fetch failed'));
 
-            global.fetch = originalFetch;
+            await expect(verifyIdToken(mockToken)).rejects.toThrow('Network error');
         });
 
         test('should handle API errors from Vercel endpoint', async () => {
-            // Mock API error response
-            const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockResolvedValue({
+            const mockToken = 'invalid.token';
+
+            fetch.mockResolvedValueOnce({
                 ok: false,
-                status: 401,
+                status: 400,
                 json: () => Promise.resolve({ error: 'Invalid token' })
             });
 
-            const mockToken = 'invalid.token';
-
             await expect(verifyIdToken(mockToken)).rejects.toThrow('Invalid token');
-
-            global.fetch = originalFetch;
         });
     });
 });

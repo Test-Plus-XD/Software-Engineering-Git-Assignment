@@ -113,7 +113,6 @@ function HomeContent() {
                     AI Chat
                   </button>
                   <div className="border-l border-gray-300 dark:border-gray-600 h-6 mx-2"></div>
-                  <DatabaseResetButton />
                   <AuthComponent />
                 </div>
               </nav>
@@ -154,13 +153,18 @@ function HomeContent() {
             {/* Gallery Section */}
             {activeSection === 'gallery' && (
               <section className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8">
-                <div className="mb-6">
-                  <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Image Gallery
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Browse and manage uploaded images
-                  </p>
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                      Image Gallery
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Browse and manage uploaded images
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <DatabaseResetButton />
+                  </div>
                 </div>
 
                 {/* Search and Filter Bar */}

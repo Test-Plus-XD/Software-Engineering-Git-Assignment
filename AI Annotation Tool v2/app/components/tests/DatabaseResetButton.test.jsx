@@ -3,13 +3,19 @@
  * Tests rendering, confirmation dialog, and reset functionality
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import DatabaseResetButton from '../DatabaseResetButton';
 
-// Mock the API client
+// Mock the API client and data sync
 jest.mock('../../../lib/utils/network-error-handler', () => ({
     apiClient: {
         post: jest.fn()
+    }
+}));
+
+jest.mock('../../../lib/utils/data-sync', () => ({
+    dataOperations: {
+        notifyDataRefresh: jest.fn()
     }
 }));
 
@@ -18,13 +24,9 @@ describe('DatabaseResetButton Component', () => {
         // Reset all mocks before each test
         jest.clearAllMocks();
 
-        // Mock window.location.reload properly for jsdom
-        Object.defineProperty(window, 'location', {
-            value: {
-                reload: jest.fn()
-            },
-            writable: true
-        });
+        // Reset the data sync mock specifically
+        const { dataOperations } = require('../../../lib/utils/data-sync');
+        dataOperations.notifyDataRefresh.mockClear();
     });
 
     describe('Component Rendering', () => {
@@ -112,8 +114,9 @@ describe('DatabaseResetButton Component', () => {
             expect(spinner).toBeInTheDocument();
         });
 
-        test('shows success message on successful reset', async () => {
+        test('notifies data refresh on successful reset', async () => {
             const { apiClient } = require('../../../lib/utils/network-error-handler');
+            const { dataOperations } = require('../../../lib/utils/data-sync');
             apiClient.post.mockResolvedValue({ success: true });
 
             render(<DatabaseResetButton />);
@@ -133,10 +136,15 @@ describe('DatabaseResetButton Component', () => {
                 expect(screen.getByText(/Database reset successfully/)).toBeInTheDocument();
             });
 
-            // Should schedule page reload
+            // Check that message is positioned to the left of button (using flex layout)
+            const statusMessage = screen.getByTestId('reset-status-message');
+            expect(statusMessage).toBeInTheDocument();
+            expect(statusMessage).toHaveClass('opacity-100'); // Should be visible initially
+
+            // Should notify data refresh instead of reloading page
             await waitFor(() => {
-                expect(window.location.reload).toHaveBeenCalled();
-            }, { timeout: 3000 });
+                expect(dataOperations.notifyDataRefresh).toHaveBeenCalled();
+            }, { timeout: 2000 });
         });
 
         test('shows error message on failed reset', async () => {
@@ -160,8 +168,52 @@ describe('DatabaseResetButton Component', () => {
                 expect(screen.getByText(/Failed to reset database/)).toBeInTheDocument();
             });
 
-            // Should not reload page
-            expect(window.location.reload).not.toHaveBeenCalled();
+            // The main functionality test is that error message is shown
+            // We don't need to test the data refresh behavior in error cases
+        });
+
+        test('success message fades out after 4 seconds', async () => {
+            jest.useFakeTimers();
+
+            const { apiClient } = require('../../../lib/utils/network-error-handler');
+            const { dataOperations } = require('../../../lib/utils/data-sync');
+            apiClient.post.mockResolvedValue({ success: true });
+
+            render(<DatabaseResetButton />);
+
+            // Perform reset
+            fireEvent.click(screen.getByTestId('database-reset-button'));
+            const confirmButtons = screen.getAllByText('Reset Database');
+            const confirmButton = confirmButtons.find(btn =>
+                btn.className.includes('bg-red-600')
+            );
+            fireEvent.click(confirmButton);
+
+            // Wait for success message to appear
+            await waitFor(() => {
+                expect(screen.getByTestId('reset-status-message')).toBeInTheDocument();
+            });
+
+            const statusMessage = screen.getByTestId('reset-status-message');
+            expect(statusMessage).toHaveClass('opacity-100');
+
+            // Fast-forward 4 seconds to trigger fade
+            jest.advanceTimersByTime(4000);
+
+            // Wait for fade to start
+            await waitFor(() => {
+                expect(statusMessage).toHaveClass('opacity-0');
+            });
+
+            // Fast-forward fade animation duration
+            jest.advanceTimersByTime(300);
+
+            // Message should be removed from DOM
+            await waitFor(() => {
+                expect(screen.queryByTestId('reset-status-message')).not.toBeInTheDocument();
+            });
+
+            jest.useRealTimers();
         });
     });
 

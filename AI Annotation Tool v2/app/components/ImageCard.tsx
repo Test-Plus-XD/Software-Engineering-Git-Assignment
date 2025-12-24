@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { dataOperations } from '../../lib/utils/data-sync'
 
 interface ImageData {
     image_id: number
@@ -39,6 +40,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
     const [commonLabels, setCommonLabels] = useState<string[]>([])
     const [customLabelInput, setCustomLabelInput] = useState('')
     const [selectedCommonLabel, setSelectedCommonLabel] = useState('')
+    const [newLabelConfidence, setNewLabelConfidence] = useState<number>(100)
 
     // In test environment, simulate immediate loading
     useEffect(() => {
@@ -128,9 +130,9 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
 
             if (data.success) {
                 console.log('Label deleted successfully')
-                // Close modal and reload page to reflect changes
+                // Close modal and notify components to refresh
                 setEditingLabelIndex(null)
-                window.location.reload()
+                dataOperations.notifyDataRefresh()
             } else {
                 console.error('Failed to delete label:', data.error)
                 alert('Failed to delete label: ' + data.error)
@@ -162,9 +164,9 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
 
                 if (data.success) {
                     console.log('Confidence updated successfully')
-                    // Close modal and reload page to reflect changes
+                    // Close modal and notify components to refresh
                     setEditingLabelIndex(null)
-                    window.location.reload()
+                    dataOperations.notifyDataRefresh()
                 } else {
                     console.error('Failed to update confidence:', data.error)
                     alert('Failed to update confidence: ' + data.error)
@@ -189,7 +191,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
                 body: JSON.stringify({
                     imageId: image.image_id,
                     labelName: newLabel,
-                    confidence: 100
+                    confidence: newLabelConfidence
                 })
             })
 
@@ -197,11 +199,12 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
 
             if (data.success) {
                 console.log('Label added successfully')
-                // Close modal and reload page to reflect changes
+                // Close modal and notify components to refresh
                 setShowAddLabel(false)
                 setCustomLabelInput('')
                 setSelectedCommonLabel('')
-                window.location.reload()
+                setNewLabelConfidence(100)
+                dataOperations.notifyDataRefresh()
             } else {
                 console.error('Failed to add label:', data.error)
                 alert('Failed to add label: ' + data.error)
@@ -502,6 +505,27 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
                             />
                         </div>
 
+                        {/* Confidence Slider */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Confidence: {newLabelConfidence}%
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={newLabelConfidence}
+                                onChange={(e) => setNewLabelConfidence(parseInt(e.target.value))}
+                                className="confidence-slider w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                data-testid="new-label-confidence-slider"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+
                         {/* Action Buttons */}
                         <div className="flex gap-2">
                             <button
@@ -516,6 +540,7 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
                                     setShowAddLabel(false)
                                     setCustomLabelInput('')
                                     setSelectedCommonLabel('')
+                                    setNewLabelConfidence(100)
                                 }}
                                 className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colours"
                             >

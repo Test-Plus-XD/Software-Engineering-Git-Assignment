@@ -373,5 +373,13 @@ export const dataOperations = {
      */
     notifyUploadFailed(error: any): void {
         dataSyncEmitter.emit(DATA_SYNC_EVENTS.UPLOAD_FAILED, error)
+    },
+
+    /**
+     * Notify general data refresh (for database reset, etc.)
+     */
+    notifyDataRefresh(): void {
+        dataSyncEmitter.emit(DATA_SYNC_EVENTS.IMAGES_REFRESHED, { reason: 'data_refresh' })
+        dataSyncEmitter.emit(DATA_SYNC_EVENTS.LABELS_REFRESHED, { reason: 'data_refresh' })
     }
 }

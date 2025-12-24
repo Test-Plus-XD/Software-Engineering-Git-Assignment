@@ -114,7 +114,7 @@ export default function ImageGallery({
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mb-4"></div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Loading</h3>
-                    <p className="text-gray-500">Fetching your images...</p>
+                    <p className="text-gray-500">Fetching images...</p>
                 </div>
             </div>
         )
@@ -197,8 +197,8 @@ export default function ImageGallery({
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Images Found</h3>
                     <p className="text-gray-500">
                         {searchQuery || selectedLabel
-                            ? 'Try adjusting your search criteria or upload some images to get started.'
-                            : 'Upload some images to get started with your annotation project.'
+                            ? 'Try adjusting the search criteria or upload some images to get started.'
+                            : 'Upload some images to get started with the annotation project.'
                         }
                     </p>
                 </div>

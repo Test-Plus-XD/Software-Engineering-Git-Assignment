@@ -2,4 +2,5 @@
 
 /**
  * LabelSelector Component
- * Multi-select label interface with inline creation, search functionality, 
+ * Multi-select label interface with inline creation and search functionality
+ */

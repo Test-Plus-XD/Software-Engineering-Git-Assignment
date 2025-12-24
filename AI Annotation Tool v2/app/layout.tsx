@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AI Annotation Tool v2",
-  description: "Upload, organize, and annotate your images with powerful AI-assisted labeling tools",
+  description: "Upload, organise, and annotate images with powerful AI-assisted labelling tools",
 };
 
 export default function RootLayout({

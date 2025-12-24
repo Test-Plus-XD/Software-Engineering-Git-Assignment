@@ -49,8 +49,8 @@ export default function Home() {
                 Welcome to AI Annotation Tool
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                Upload, organize, and annotate your images with powerful AI-assisted labeling tools.
-                Build your dataset efficiently with our intuitive interface.
+                Upload, organise, and annotate images with powerful AI-assisted labelling tools.
+                Build datasets efficiently with the intuitive interface.
               </p>
             </section>
 
@@ -71,7 +71,7 @@ export default function Home() {
                   Image Gallery
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Browse and manage your uploaded images
+                  Browse and manage uploaded images
                 </p>
               </div>
               <ImageGallery />

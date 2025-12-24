@@ -19,25 +19,32 @@ jest.mock('../../../lib/ai/gemini', () => ({
     generateText: jest.fn()
 }));
 
-// Mock the AuthContext
-const mockAuthContext = {
-    user: {
-        uid: 'test-user-123',
-        email: 'test@example.com',
-        displayName: 'Test User'
-    },
-    loading: false
-};
-
-jest.mock('../../contexts/AuthContext', () => ({
-    useAuth: () => mockAuthContext
-}));
-
 const { generateText } = require('../../../lib/ai/gemini');
+
+// Mock the AuthContext hook
+jest.mock('../../contexts/AuthContext', () => ({
+    useAuth: () => {
+        // Try to get mock context from global variable
+        if (global.mockAuthContext) {
+            return global.mockAuthContext;
+        }
+
+        // Default authenticated user for most tests
+        return {
+            user: {
+                uid: 'test-user-123',
+                email: 'test@example.com',
+                displayName: 'Test User'
+            },
+            loading: false
+        };
+    }
+}));
 
 describe('ChatBox Component', () => {
     beforeEach(() => {
         generateText.mockClear();
+        global.mockAuthContext = null;
     });
 
     describe('Chat Interface Rendering', () => {
@@ -335,17 +342,12 @@ describe('ChatBox Component', () => {
 
     describe('Authentication Guard', () => {
         test('should only render ChatBox for authenticated users', () => {
-            // Mock unauthenticated user
-            const mockUnauthenticatedContext = {
+            // Set up unauthenticated context
+            global.mockAuthContext = {
                 user: null,
                 loading: false
             };
 
-            jest.doMock('../../contexts/AuthContext', () => ({
-                useAuth: () => mockUnauthenticatedContext
-            }));
-
-            // This test should fail because authentication guard is not implemented
             render(<ChatBox />);
 
             expect(screen.queryByText(/chat with ai/i)).not.toBeInTheDocument();
@@ -353,17 +355,12 @@ describe('ChatBox Component', () => {
         });
 
         test('should show login prompt for unauthenticated users', () => {
-            // Mock unauthenticated user
-            const mockUnauthenticatedContext = {
+            // Set up unauthenticated context
+            global.mockAuthContext = {
                 user: null,
                 loading: false
             };
 
-            jest.doMock('../../contexts/AuthContext', () => ({
-                useAuth: () => mockUnauthenticatedContext
-            }));
-
-            // This test should fail because login prompt is not implemented
             render(<ChatBox />);
 
             expect(screen.getByText(/please sign in to access the chatbot/i)).toBeInTheDocument();
@@ -371,7 +368,7 @@ describe('ChatBox Component', () => {
         });
 
         test('should display user\'s display name in chat header', () => {
-            // This test should pass as it's already implemented
+            // Use default authenticated context
             render(<ChatBox />);
 
             expect(screen.getByText(/welcome, test user/i)).toBeInTheDocument();

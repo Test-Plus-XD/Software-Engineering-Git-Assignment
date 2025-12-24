@@ -11,21 +11,28 @@ import { useAuth } from '../contexts/AuthContext';
 import GoogleSignInButton from './GoogleSignInButton';
 
 const AuthComponent = () => {
-    const { user, loading, signIn, signUp, signOut } = useAuth();
+    const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
+    const [showResetPassword, setShowResetPassword] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccess('');
         setIsSubmitting(true);
 
         try {
-            if (isSignUp) {
+            if (showResetPassword) {
+                await resetPassword(email);
+                setSuccess('Password reset email sent! Check your inbox.');
+                setShowResetPassword(false);
+            } else if (isSignUp) {
                 await signUp(email, password, displayName);
             } else {
                 await signIn(email, password);
@@ -85,7 +92,7 @@ const AuthComponent = () => {
     return (
         <div data-testid="auth-container" className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md mx-auto">
             <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">
-                {isSignUp ? 'Sign Up' : 'Sign In'}
+                {showResetPassword ? 'Reset Password' : (isSignUp ? 'Sign Up' : 'Sign In')}
             </h2>
 
             {error && (
@@ -94,25 +101,35 @@ const AuthComponent = () => {
                 </div>
             )}
 
-            {/* Google Sign-In Button */}
-            <div className="mb-6">
-                <GoogleSignInButton onError={handleGoogleError} />
-            </div>
+            {success && (
+                <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded">
+                    {success}
+                </div>
+            )}
 
-            {/* Divider */}
-            <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                        Or continue with email
-                    </span>
-                </div>
-            </div>
+            {!showResetPassword && (
+                <>
+                    {/* Google Sign-In Button */}
+                    <div className="mb-6">
+                        <GoogleSignInButton onError={handleGoogleError} />
+                    </div>
+
+                    {/* Divider */}
+                    <div className="relative mb-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                                Or continue with email
+                            </span>
+                        </div>
+                    </div>
+                </>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                {isSignUp && (
+                {isSignUp && !showResetPassword && (
                     <div>
                         <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Display Name
@@ -147,45 +164,73 @@ const AuthComponent = () => {
                     />
                 </div>
 
-                <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Password
-                    </label>
-                    <input
-                        id="password"
-                        data-testid="password-input"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
-                                 bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                        minLength={6}
-                    />
-                </div>
+                {!showResetPassword && (
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Password
+                        </label>
+                        <input
+                            id="password"
+                            data-testid="password-input"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+                                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                            minLength={6}
+                        />
+                    </div>
+                )}
 
                 <button
                     type="submit"
-                    data-testid={isSignUp ? "signup-button" : "signin-button"}
+                    data-testid={showResetPassword ? "reset-password-button" : (isSignUp ? "signup-button" : "signin-button")}
                     disabled={isSubmitting}
                     className="w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 
                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                              disabled:opacity-50 disabled:cursor-not-allowed
                              transition-colors duration-200"
                 >
-                    {isSubmitting ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+                    {isSubmitting ? 'Processing...' : (showResetPassword ? 'Send Reset Email' : (isSignUp ? 'Sign Up' : 'Sign In'))}
                 </button>
             </form>
 
-            <div className="mt-4 text-center">
-                <button
-                    type="button"
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="text-blue-500 hover:text-blue-600 text-sm"
-                >
-                    {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
-                </button>
+            <div className="mt-4 text-center space-y-2">
+                {!showResetPassword && (
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setIsSignUp(!isSignUp)}
+                            className="text-blue-500 hover:text-blue-600 text-sm block"
+                        >
+                            {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+                        </button>
+                        {!isSignUp && (
+                            <button
+                                type="button"
+                                onClick={() => setShowResetPassword(true)}
+                                className="text-blue-500 hover:text-blue-600 text-sm block"
+                            >
+                                Forgot your password?
+                            </button>
+                        )}
+                    </>
+                )}
+                {showResetPassword && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setShowResetPassword(false);
+                            setError('');
+                            setSuccess('');
+                        }}
+                        className="text-blue-500 hover:text-blue-600 text-sm"
+                    >
+                        Back to Sign In
+                    </button>
+                )}
             </div>
         </div>
     );

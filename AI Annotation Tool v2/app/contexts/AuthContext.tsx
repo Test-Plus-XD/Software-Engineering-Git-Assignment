@@ -8,6 +8,17 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInWithPopup,
+    signOut as firebaseSignOut,
+    onAuthStateChanged,
+    updateProfile,
+    sendPasswordResetEmail,
+    User as FirebaseUser
+} from 'firebase/auth';
+import { auth, googleProvider } from '../../lib/firebase/config';
 
 // Define types for the authentication context
 interface User {
@@ -25,57 +36,93 @@ interface AuthContextType {
     idToken: string | null;
     signIn: (email: string, password: string) => Promise<User>;
     signUp: (email: string, password: string, displayName: string) => Promise<User>;
-    signInWithGoogle: (googleIdToken: string) => Promise<User>;
+    signInWithGoogle: () => Promise<User>;
     signOut: () => Promise<void>;
     verifyToken: () => Promise<boolean>;
     refreshToken: () => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
 }
 
 interface AuthProviderProps {
     children: ReactNode;
 }
 
-const AuthContext = createContext < AuthContextType | undefined > (undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
  * Authentication Provider Component
  * Manages Firebase authentication state and provides auth methods
  */
 export function AuthProvider({ children }: AuthProviderProps) {
-    const [user, setUser] = useState < User | null > (null);
-    const [loading, setLoading] = useState < boolean > (true);
-    const [idToken, setIdToken] = useState < string | null > (null);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [idToken, setIdToken] = useState<string | null>(null);
+
+    /**
+     * Convert Firebase user to our User type and sync with Vercel API
+     */
+    const processFirebaseUser = async (firebaseUser: FirebaseUser): Promise<User> => {
+        try {
+            // Get Firebase ID token
+            const token = await firebaseUser.getIdToken();
+
+            // Send to Vercel API for processing
+            const response = await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/login', {
+                method: 'POST',
+                headers: {
+                    'x-api-passcode': 'PourRice',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: firebaseUser.email,
+                    idToken: token
+                })
+            });
+
+            let userData;
+            if (response.ok) {
+                userData = await response.json();
+            } else {
+                // If user doesn't exist in API, create basic user data
+                userData = {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName || 'User',
+                    photoURL: firebaseUser.photoURL,
+                    emailVerified: firebaseUser.emailVerified,
+                    profile: { type: 'customer' }
+                };
+            }
+
+            const mappedUser: User = {
+                uid: userData.uid || firebaseUser.uid,
+                email: userData.email || firebaseUser.email || '',
+                displayName: userData.displayName || firebaseUser.displayName || 'User',
+                photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
+                emailVerified: userData.emailVerified ?? firebaseUser.emailVerified,
+                type: userData.profile?.type || 'customer'
+            };
+
+            setUser(mappedUser);
+            setIdToken(token);
+
+            return mappedUser;
+        } catch (error) {
+            console.error('Error processing Firebase user:', error);
+            throw error;
+        }
+    };
 
     /**
      * Sign in with email and password
-     * @param {string} email - User email
-     * @param {string} password - User password
-     * @returns {Promise<User>} User data
      */
     const signIn = async (email: string, password: string): Promise<User> => {
         try {
             setLoading(true);
-
-            // This would typically use Firebase Auth SDK
-            // For now, we'll simulate the authentication flow
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, password })
-            });
-
-            if (!response.ok) {
-                throw new Error('Authentication failed');
-            }
-
-            const userData = await response.json();
-            setUser(userData);
-            setIdToken(userData.customToken);
-
-            return userData;
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            return await processFirebaseUser(userCredential.user);
         } catch (error) {
+            console.error('Sign in error:', error);
             throw error;
         } finally {
             setLoading(false);
@@ -84,33 +131,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     /**
      * Sign up with email and password
-     * @param {string} email - User email
-     * @param {string} password - User password
-     * @param {string} displayName - User display name
-     * @returns {Promise<User>} User data
      */
     const signUp = async (email: string, password: string, displayName: string): Promise<User> => {
         try {
             setLoading(true);
 
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, password, displayName })
-            });
+            // Create user with Firebase
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-            if (!response.ok) {
-                throw new Error('Registration failed');
+            // Update profile with display name
+            await updateProfile(userCredential.user, { displayName });
+
+            // Register with Vercel API
+            const token = await userCredential.user.getIdToken();
+
+            try {
+                await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'x-api-passcode': 'PourRice',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password, // Note: In production, don't send password to your API
+                        displayName,
+                        type: 'customer'
+                    })
+                });
+            } catch (apiError) {
+                console.warn('Failed to register with API:', apiError);
+                // Continue even if API registration fails
             }
 
-            const userData = await response.json();
-            setUser(userData);
-            setIdToken(userData.customToken);
-
-            return userData;
+            return await processFirebaseUser(userCredential.user);
         } catch (error) {
+            console.error('Sign up error:', error);
             throw error;
         } finally {
             setLoading(false);
@@ -118,45 +174,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     /**
-     * Sign in with Google OAuth using Vercel API
-     * @param {string} googleIdToken - Google ID token
-     * @returns {Promise<User>} User data
+     * Sign in with Google
      */
-    const signInWithGoogle = async (googleIdToken: string): Promise<User> => {
+    const signInWithGoogle = async (): Promise<User> => {
         try {
             setLoading(true);
+            const result = await signInWithPopup(auth, googleProvider);
 
-            const response = await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/google', {
-                method: 'POST',
-                headers: {
-                    'x-api-passcode': 'PourRice',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ idToken: googleIdToken })
-            });
+            // Get Firebase ID token
+            const token = await result.user.getIdToken();
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Google authentication failed');
+            // Send to Vercel API Google endpoint
+            try {
+                const response = await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/google', {
+                    method: 'POST',
+                    headers: {
+                        'x-api-passcode': 'PourRice',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ idToken: token })
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    const mappedUser: User = {
+                        uid: userData.uid,
+                        email: userData.email,
+                        displayName: userData.displayName,
+                        photoURL: userData.photoURL,
+                        emailVerified: userData.emailVerified,
+                        type: userData.profile?.type || 'customer'
+                    };
+
+                    setUser(mappedUser);
+                    setIdToken(userData.customToken || token);
+                    return mappedUser;
+                }
+            } catch (apiError) {
+                console.warn('API call failed, using Firebase data:', apiError);
             }
 
-            const userData = await response.json();
-
-            // Map the Vercel API response to our expected format
-            const mappedUser = {
-                uid: userData.uid,
-                email: userData.email,
-                displayName: userData.displayName,
-                photoURL: userData.photoURL,
-                emailVerified: userData.emailVerified,
-                type: userData.profile?.type || 'customer'
-            };
-
-            setUser(mappedUser);
-            setIdToken(userData.customToken);
-
-            return mappedUser;
+            // Fallback to Firebase user data
+            return await processFirebaseUser(result.user);
         } catch (error) {
+            console.error('Google sign in error:', error);
             throw error;
         } finally {
             setLoading(false);
@@ -171,38 +232,68 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setLoading(true);
 
             if (user?.uid) {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ uid: user.uid })
-                });
+                try {
+                    await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'x-api-passcode': 'PourRice',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ uid: user.uid })
+                    });
+                } catch (apiError) {
+                    console.warn('API logout failed:', apiError);
+                }
             }
 
+            await firebaseSignOut(auth);
             setUser(null);
             setIdToken(null);
         } catch (error) {
             console.error('Sign out error:', error);
-            // Still clear local state even if API call fails
-            setUser(null);
-            setIdToken(null);
+            throw error;
         } finally {
             setLoading(false);
         }
     };
 
     /**
+     * Reset password
+     */
+    const resetPassword = async (email: string): Promise<void> => {
+        try {
+            // Try Vercel API first
+            try {
+                await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'x-api-passcode': 'PourRice',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+            } catch (apiError) {
+                console.warn('API reset failed, using Firebase:', apiError);
+                // Fallback to Firebase
+                await sendPasswordResetEmail(auth, email);
+            }
+        } catch (error) {
+            console.error('Password reset error:', error);
+            throw error;
+        }
+    };
+
+    /**
      * Verify current ID token
-     * @returns {Promise<boolean>} Token validity
      */
     const verifyToken = async (): Promise<boolean> => {
         if (!idToken) return false;
 
         try {
-            const response = await fetch('/api/auth/verify', {
+            const response = await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/verify', {
                 method: 'POST',
                 headers: {
+                    'x-api-passcode': 'PourRice',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ idToken })
@@ -217,19 +308,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     /**
      * Refresh authentication token
-     * This would typically handle token refresh automatically
      */
     const refreshToken = async (): Promise<void> => {
         try {
-            if (!user) return;
-
-            // In a real implementation, this would refresh the Firebase token
-            // For now, we'll just verify the current token
-            const isValid = await verifyToken();
-
-            if (!isValid) {
-                // Token is invalid, sign out user
-                await signOut();
+            if (auth.currentUser) {
+                const token = await auth.currentUser.getIdToken(true); // Force refresh
+                setIdToken(token);
             }
         } catch (error) {
             console.error('Token refresh error:', error);
@@ -237,47 +321,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     };
 
-    // Initialize authentication state on mount
+    // Listen to Firebase auth state changes
     useEffect(() => {
-        // Check for stored authentication state
-        const storedUser = localStorage.getItem('auth_user');
-        const storedToken = localStorage.getItem('auth_token');
-
-        if (storedUser && storedToken) {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             try {
-                const userData = JSON.parse(storedUser);
-                setUser(userData);
-                setIdToken(storedToken);
-
-                // Verify token is still valid
-                verifyToken().then(isValid => {
-                    if (!isValid) {
-                        localStorage.removeItem('auth_user');
-                        localStorage.removeItem('auth_token');
-                        setUser(null);
-                        setIdToken(null);
-                    }
-                });
+                if (firebaseUser) {
+                    await processFirebaseUser(firebaseUser);
+                } else {
+                    setUser(null);
+                    setIdToken(null);
+                }
             } catch (error) {
-                console.error('Error parsing stored auth data:', error);
-                localStorage.removeItem('auth_user');
-                localStorage.removeItem('auth_token');
+                console.error('Auth state change error:', error);
+                setUser(null);
+                setIdToken(null);
+            } finally {
+                setLoading(false);
             }
-        }
+        });
 
-        setLoading(false);
+        return () => unsubscribe();
     }, []);
-
-    // Store authentication state in localStorage when it changes
-    useEffect(() => {
-        if (user && idToken) {
-            localStorage.setItem('auth_user', JSON.stringify(user));
-            localStorage.setItem('auth_token', idToken);
-        } else {
-            localStorage.removeItem('auth_user');
-            localStorage.removeItem('auth_token');
-        }
-    }, [user, idToken]);
 
     // Set up token refresh interval
     useEffect(() => {
@@ -297,7 +361,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         signInWithGoogle,
         signOut,
         verifyToken,
-        refreshToken
+        refreshToken,
+        resetPassword
     };
 
     return (
@@ -309,7 +374,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 /**
  * Hook to use authentication context
- * @returns {AuthContextType} Authentication context value
  */
 export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);

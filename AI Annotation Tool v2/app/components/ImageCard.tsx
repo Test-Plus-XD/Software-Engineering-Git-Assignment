@@ -117,20 +117,20 @@ export default function ImageCard({ image, onLabelClick, className = '' }: Image
                     </div>
                 )}
 
-                {!isLoading && !hasError && (
+                {!hasError && (
                     <>
                         <Image
                             src={image.file_path}
                             alt={image.original_name || image.filename}
                             fill
-                            className="object-cover"
+                            className={`object-cover ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
                             onLoad={handleImageLoad}
                             onError={handleImageError}
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
 
                         {/* Hover Details Overlay */}
-                        {showDetails && (
+                        {!isLoading && showDetails && (
                             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-sm">
                                 <div className="text-center p-4">
                                     <p>{formatFileSize(image.file_size)}</p>

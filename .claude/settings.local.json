@@ -11,7 +11,13 @@
       "Bash(node test-report.js:*)",
       "Bash(node:*)",
       "Bash(cat:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npm run build:*)",
+      "Bash(timeout 15 npm run dev:*)",
+      "Bash(curl http://localhost:3000/api/images)",
+      "Bash(curl:*)",
+      "Bash(npm run test:db:seeding:*)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

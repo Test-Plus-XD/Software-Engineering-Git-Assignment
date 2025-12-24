@@ -20,13 +20,13 @@ INSERT OR IGNORE INTO labels (label_name, label_description) VALUES
     ('landscape', 'Wide natural or urban scenes');
 
 -- Insert sample image records
--- The file paths assume these images exist in the public/uploads directory (Next.js convention)
+-- The file paths use Firebase Storage URLs for remote image hosting
 INSERT OR IGNORE INTO images (filename, original_name, file_path, file_size, mime_type) VALUES
-    ('sample-cat-001.jpg', 'my_cat.jpg', 'public/uploads/sample-cat-001.jpg', 245760, 'image/jpeg'),
-    ('sample-dog-001.jpg', 'golden_retriever.jpg', 'public/uploads/sample-dog-001.jpg', 312450, 'image/jpeg'),
-    ('sample-landscape-001.jpg', 'mountain_view.jpg', 'public/uploads/sample-landscape-001.jpg', 456789, 'image/jpeg'),
-    ('sample-person-001.jpg', 'portrait_photo.jpg', 'public/uploads/sample-person-001.jpg', 198765, 'image/jpeg'),
-    ('sample-food-001.jpg', 'lunch_plate.jpg', 'public/uploads/sample-food-001.jpg', 287654, 'image/jpeg');
+    ('sample-cat-001.jpg', 'my_cat.jpg', 'https://firebasestorage.googleapis.com/v0/b/cross-platform-assignmen-b97cc.firebasestorage.app/o/Annotations%2Fsample-cat-001.jpg?alt=media&token=9789c13a-9fe9-492b-86cd-ce8018511f48', 245760, 'image/jpeg'),
+    ('sample-dog-001.jpg', 'golden_retriever.jpg', 'https://firebasestorage.googleapis.com/v0/b/cross-platform-assignmen-b97cc.firebasestorage.app/o/Annotations%2Fsample-dog-001.jpg?alt=media&token=92137c9b-8346-48e3-ada8-0753f59cf93c', 312450, 'image/jpeg'),
+    ('sample-landscape-001.jpg', 'mountain_view.jpg', 'https://firebasestorage.googleapis.com/v0/b/cross-platform-assignmen-b97cc.firebasestorage.app/o/Annotations%2Fsample-landscape-001.jpg?alt=media&token=db1e3a03-bdcf-42cc-970c-0f6820328dcd', 456789, 'image/jpeg'),
+    ('sample-person-001.jpg', 'portrait_photo.jpg', 'https://firebasestorage.googleapis.com/v0/b/cross-platform-assignmen-b97cc.firebasestorage.app/o/Annotations%2Fsample-person-001.jpg?alt=media&token=b184f9aa-5c18-4f99-a909-f61e7dfd437d', 198765, 'image/jpeg'),
+    ('sample-food-001.jpg', 'lunch_plate.jpg', 'https://firebasestorage.googleapis.com/v0/b/cross-platform-assignmen-b97cc.firebasestorage.app/o/Annotations%2Fsample-food-001.jpg?alt=media&token=00686225-78cb-4767-bae4-e8e17e710395', 287654, 'image/jpeg');
 
 -- Insert sample annotations linking images to labels
 -- These create the many-to-many relationships demonstrating how one image can have multiple labels

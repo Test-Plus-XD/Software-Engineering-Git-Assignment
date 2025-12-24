@@ -22,7 +22,7 @@ function initializeProxy() {
     proxyInstance = {
       // Images table methods
       images: {
-        findWithLabels: function() {
+        findWithLabels: function () {
           return db.prepare(`
             SELECT
               i.*,
@@ -36,7 +36,7 @@ function initializeProxy() {
           `).all();
         },
 
-        findByIdWithAnnotations: function(imageId) {
+        findByIdWithAnnotations: function (imageId) {
           const image = db.prepare('SELECT * FROM images WHERE image_id = ?').get(imageId);
           if (!image) return undefined;
 
@@ -57,15 +57,15 @@ function initializeProxy() {
           };
         },
 
-        findById: function(imageId) {
+        findById: function (imageId) {
           return db.prepare('SELECT * FROM images WHERE image_id = ?').get(imageId);
         },
 
-        findAll: function() {
+        findAll: function () {
           return db.prepare('SELECT * FROM images ORDER BY uploaded_at DESC').all();
         },
 
-        create: function(data) {
+        create: function (data) {
           // Validate data
           const validation = validateData('images', data);
           if (!validation.valid) {
@@ -80,7 +80,7 @@ function initializeProxy() {
           return { image_id: result.lastInsertRowid, ...data };
         },
 
-        update: function(imageId, data) {
+        update: function (imageId, data) {
           const updateFields = Object.keys(data).filter(key => key !== 'image_id');
           if (updateFields.length === 0) {
             return { changes: 0 };
@@ -92,7 +92,7 @@ function initializeProxy() {
           return result;
         },
 
-        delete: function(imageId) {
+        delete: function (imageId) {
           const stmt = db.prepare('DELETE FROM images WHERE image_id = ?');
           return stmt.run(imageId);
         }
@@ -100,7 +100,7 @@ function initializeProxy() {
 
       // Labels table methods
       labels: {
-        findWithUsageStats: function() {
+        findWithUsageStats: function () {
           return db.prepare(`
             SELECT
               l.*,
@@ -113,7 +113,7 @@ function initializeProxy() {
           `).all();
         },
 
-        findByNameOrCreate: function(labelName, description = null) {
+        findByNameOrCreate: function (labelName, description = null) {
           // Try to find existing label
           const existing = db.prepare('SELECT * FROM labels WHERE label_name = ?').get(labelName);
           if (existing) {
@@ -134,15 +134,15 @@ function initializeProxy() {
           };
         },
 
-        findById: function(labelId) {
+        findById: function (labelId) {
           return db.prepare('SELECT * FROM labels WHERE label_id = ?').get(labelId);
         },
 
-        findAll: function() {
+        findAll: function () {
           return db.prepare('SELECT * FROM labels ORDER BY label_name').all();
         },
 
-        create: function(data) {
+        create: function (data) {
           // Validate data
           const validation = validateData('labels', data);
           if (!validation.valid) {
@@ -161,7 +161,7 @@ function initializeProxy() {
           };
         },
 
-        update: function(labelId, data) {
+        update: function (labelId, data) {
           const updateFields = Object.keys(data).filter(key => key !== 'label_id');
           if (updateFields.length === 0) {
             return { changes: 0 };
@@ -173,7 +173,7 @@ function initializeProxy() {
           return result;
         },
 
-        delete: function(labelId) {
+        delete: function (labelId) {
           const stmt = db.prepare('DELETE FROM labels WHERE label_id = ?');
           return stmt.run(labelId);
         }
@@ -181,7 +181,7 @@ function initializeProxy() {
 
       // Annotations table methods
       annotations: {
-        findByImageId: function(imageId) {
+        findByImageId: function (imageId) {
           return db.prepare(`
             SELECT
               a.*,
@@ -194,7 +194,7 @@ function initializeProxy() {
           `).all(imageId);
         },
 
-        findByLabelId: function(labelId) {
+        findByLabelId: function (labelId) {
           return db.prepare(`
             SELECT
               a.*,
@@ -207,11 +207,11 @@ function initializeProxy() {
           `).all(labelId);
         },
 
-        findAll: function() {
+        findAll: function () {
           return db.prepare('SELECT * FROM annotations ORDER BY created_at DESC').all();
         },
 
-        createWithValidation: function(data) {
+        createWithValidation: function (data) {
           // Validate confidence range
           if (data.confidence !== undefined && (data.confidence < 0 || data.confidence > 1)) {
             throw new Error('Confidence must be between 0.0 and 1.0');
@@ -244,7 +244,7 @@ function initializeProxy() {
           };
         },
 
-        create: function(data) {
+        create: function (data) {
           const stmt = db.prepare(`
             INSERT INTO annotations (image_id, label_id, confidence)
             VALUES (@image_id, @label_id, @confidence)
@@ -261,14 +261,14 @@ function initializeProxy() {
           };
         },
 
-        delete: function(annotationId) {
+        delete: function (annotationId) {
           const stmt = db.prepare('DELETE FROM annotations WHERE annotation_id = ?');
           return stmt.run(annotationId);
         }
       },
 
       // Transaction support
-      transaction: function(callback) {
+      transaction: function (callback) {
         return db.transaction(callback)();
       },
 

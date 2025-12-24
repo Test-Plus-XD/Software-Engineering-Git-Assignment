@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from './contexts/AuthContext';
 import WaveBackground from "./components/WaveBackground";
@@ -12,7 +12,7 @@ import ComponentErrorBoundary from "./components/ComponentErrorBoundary";
 import AuthComponent from "./components/AuthComponent";
 import ChatBox from "./components/ChatBox";
 
-export default function Home() {
+function HomeContent() {
   const { user, loading } = useAuth();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
@@ -85,8 +85,8 @@ export default function Home() {
                     data-testid="upload-section"
                     onClick={() => setActiveSection('upload')}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeSection === 'upload'
-                        ? 'bg-blue-500 text-white'
-                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                       }`}
                   >
                     Upload
@@ -95,8 +95,8 @@ export default function Home() {
                     data-testid="gallery-section"
                     onClick={() => setActiveSection('gallery')}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeSection === 'gallery'
-                        ? 'bg-blue-500 text-white'
-                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                       }`}
                   >
                     Gallery
@@ -105,8 +105,8 @@ export default function Home() {
                     data-testid="chatbot-section"
                     onClick={() => setActiveSection('chatbot')}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeSection === 'chatbot'
-                        ? 'bg-blue-500 text-white'
-                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                       }`}
                   >
                     AI Chat
@@ -210,5 +210,20 @@ export default function Home() {
         </footer>
       </div>
     </ErrorBoundary>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-50 dark:bg-black relative flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

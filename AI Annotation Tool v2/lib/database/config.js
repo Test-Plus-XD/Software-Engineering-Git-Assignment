@@ -14,64 +14,64 @@ const config = {
   paths: {
     // Main database path (can be overridden by environment)
     main: process.env.DATABASE_PATH || path.join(process.cwd(), 'database', 'annotations.db'),
-    
+
     // Test database path (used during testing)
     test: process.env.TEST_DB_PATH || path.join(process.cwd(), 'database', 'test_annotations.db'),
-    
+
     // Backup database path
     backup: process.env.BACKUP_DB_PATH || path.join(process.cwd(), 'database', 'annotations_backup.db'),
-    
+
     // Directory containing database files
     directory: path.join(process.cwd(), 'database')
   },
-  
+
   // Connection settings
   connection: {
     // Enable foreign key constraints
     foreignKeys: true,
-    
+
     // WAL mode for better concurrency (Write-Ahead Logging)
     walMode: process.env.NODE_ENV === 'production',
-    
+
     // Connection timeout in milliseconds
     timeout: parseInt(process.env.DB_TIMEOUT) || 5000,
-    
+
     // Enable verbose logging in development
     verbose: process.env.NODE_ENV === 'development' && process.env.DB_VERBOSE === 'true'
   },
-  
+
   // Performance settings
   performance: {
     // Cache size in KB (-1 for default)
     cacheSize: parseInt(process.env.DB_CACHE_SIZE) || -1,
-    
+
     // Synchronous mode (FULL, NORMAL, OFF)
     synchronous: process.env.DB_SYNCHRONOUS || 'FULL',
-    
+
     // Journal mode (DELETE, TRUNCATE, PERSIST, MEMORY, WAL, OFF)
     journalMode: process.env.DB_JOURNAL_MODE || 'DELETE'
   },
-  
+
   // Migration settings
   migrations: {
     // Directory containing migration files
     directory: path.join(process.cwd(), 'database', 'migrations'),
-    
+
     // Migration file pattern
     filePattern: /^\d{3}_[a-zA-Z0-9_]+\.sql$/,
-    
+
     // Table name for tracking migrations
     tableName: 'migrations'
   },
-  
+
   // Backup settings
   backup: {
     // Enable automatic backups
     enabled: process.env.DB_BACKUP_ENABLED === 'true',
-    
+
     // Backup interval in milliseconds (default: 24 hours)
     interval: parseInt(process.env.DB_BACKUP_INTERVAL) || 24 * 60 * 60 * 1000,
-    
+
     // Maximum number of backup files to keep
     maxBackups: parseInt(process.env.DB_MAX_BACKUPS) || 7
   }
@@ -86,7 +86,7 @@ function getDatabasePath() {
   if (process.env.NODE_ENV === 'test' || process.env.TEST_DB_PATH) {
     return config.paths.test;
   }
-  
+
   // Production/development environment
   return config.paths.main;
 }
@@ -96,8 +96,13 @@ function getDatabasePath() {
  * @param {string} dbPath - Database file path
  */
 function ensureDatabaseDirectory(dbPath) {
+  // Skip directory creation during build time
+  if (process.env.VERCEL || process.env.CI) {
+    return;
+  }
+
   const dbDir = path.dirname(dbPath);
-  
+
   if (!fs.existsSync(dbDir)) {
     try {
       fs.mkdirSync(dbDir, { recursive: true });
@@ -113,29 +118,35 @@ function ensureDatabaseDirectory(dbPath) {
  * @throws {Error} If configuration is invalid
  */
 function validateConfig() {
+  // Skip validation during build time (Vercel, CI/CD, etc.)
+  if (process.env.VERCEL || process.env.CI || process.env.NODE_ENV === 'production') {
+    console.log('Skipping database validation in build environment');
+    return;
+  }
+
   const dbPath = getDatabasePath();
-  
+
   // Check if database directory is writable
   const dbDir = path.dirname(dbPath);
-  
+
   try {
     // Ensure directory exists
     ensureDatabaseDirectory(dbPath);
-    
+
     // Test write permissions
     const testFile = path.join(dbDir, '.write_test');
     fs.writeFileSync(testFile, 'test');
     fs.unlinkSync(testFile);
-    
+
   } catch (error) {
     throw new Error(`Database directory is not writable: ${dbDir} - ${error.message}`);
   }
-  
+
   // Validate timeout
   if (config.connection.timeout < 1000) {
     console.warn('Database timeout is very low, this may cause connection issues');
   }
-  
+
   // Validate cache size
   if (config.performance.cacheSize !== -1 && config.performance.cacheSize < 1000) {
     console.warn('Database cache size is very low, this may impact performance');
@@ -148,11 +159,11 @@ function validateConfig() {
  */
 function getConnectionOptions() {
   const dbPath = getDatabasePath();
-  
+
   return {
     // Database file path
     path: dbPath,
-    
+
     // Connection options
     options: {
       verbose: config.connection.verbose ? console.log : null,
@@ -160,7 +171,7 @@ function getConnectionOptions() {
       timeout: config.connection.timeout,
       readonly: false
     },
-    
+
     // Pragma settings to apply after connection
     pragmas: {
       foreign_keys: config.connection.foreignKeys ? 'ON' : 'OFF',
@@ -195,18 +206,18 @@ function getConfigInfo() {
  */
 function checkDatabaseHealth(db) {
   const startTime = Date.now();
-  
+
   try {
     // Test basic connectivity
     const result = db.prepare('SELECT 1 as test').get();
     if (result.test !== 1) {
       throw new Error('Basic query failed');
     }
-    
+
     // Check foreign keys setting
     const fkResult = db.prepare('PRAGMA foreign_keys').get();
     const foreignKeysEnabled = fkResult.foreign_keys === 1;
-    
+
     // Get database info
     const dbInfo = {
       path: getDatabasePath(),
@@ -216,16 +227,16 @@ function checkDatabaseHealth(db) {
       journalMode: db.prepare('PRAGMA journal_mode').get().journal_mode,
       synchronous: db.prepare('PRAGMA synchronous').get().synchronous
     };
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     return {
       healthy: true,
       responseTime,
       database: dbInfo,
       timestamp: new Date().toISOString()
     };
-    
+
   } catch (error) {
     return {
       healthy: false,
@@ -242,7 +253,7 @@ function checkDatabaseHealth(db) {
  */
 function getDatabaseSize() {
   const dbPath = getDatabasePath();
-  
+
   try {
     if (fs.existsSync(dbPath)) {
       const stats = fs.statSync(dbPath);
@@ -267,7 +278,7 @@ function getTableCount(db) {
       FROM sqlite_master 
       WHERE type='table' AND name NOT LIKE 'sqlite_%'
     `).get();
-    
+
     return result.count;
   } catch (error) {
     console.warn('Could not get table count:', error.message);
@@ -283,11 +294,11 @@ function getTableCount(db) {
 function formatDatabaseSize(bytes) {
   if (bytes === -1) return 'Unknown';
   if (bytes === 0) return '0 B';
-  
+
   const units = ['B', 'KB', 'MB', 'GB'];
   const k = 1024;
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${units[i]}`;
 }
 
@@ -300,20 +311,20 @@ function createBackup(db) {
   if (!config.backup.enabled) {
     throw new Error('Database backups are disabled');
   }
-  
+
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupPath = path.join(
     config.paths.directory,
     `annotations_backup_${timestamp}.db`
   );
-  
+
   try {
     db.backup(backupPath);
     console.log(`Database backup created: ${backupPath}`);
-    
+
     // Clean up old backups
     cleanupOldBackups();
-    
+
     return backupPath;
   } catch (error) {
     throw new Error(`Failed to create backup: ${error.message}`);
@@ -334,11 +345,11 @@ function cleanupOldBackups() {
         mtime: fs.statSync(path.join(backupDir, file)).mtime
       }))
       .sort((a, b) => b.mtime - a.mtime);
-    
+
     // Remove excess backup files
     if (files.length > config.backup.maxBackups) {
       const filesToDelete = files.slice(config.backup.maxBackups);
-      
+
       for (const file of filesToDelete) {
         fs.unlinkSync(file.path);
         console.log(`Removed old backup: ${file.name}`);

@@ -1,0 +1,119 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - heading "AI Annotation Tool" [level=1] [ref=e7]
+        - navigation "Main navigation" [ref=e8]:
+          - generic [ref=e9]:
+            - link "Upload" [ref=e10]:
+              - /url: "#upload"
+            - link "Gallery" [ref=e11]:
+              - /url: "#gallery"
+    - main [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - heading "Welcome to AI Annotation Tool" [level=2] [ref=e15]
+          - paragraph [ref=e16]: Upload, organise, and annotate images with powerful AI-assisted labelling tools. Build datasets efficiently with the intuitive interface.
+        - generic [ref=e18]:
+          - heading "Upload New Images" [level=3] [ref=e19]
+          - generic [ref=e20]:
+            - generic [ref=e22]:
+              - img [ref=e24]
+              - paragraph [ref=e26]: Drag and drop your image here
+              - paragraph [ref=e27]: or click to choose a file
+              - button "Choose File" [ref=e28]
+              - paragraph [ref=e29]: "Supported formats: JPEG, PNG, GIF, WebP (max 10.0 MB)"
+            - button "Upload" [disabled] [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - heading "Image Gallery" [level=3] [ref=e34]
+            - paragraph [ref=e35]: Browse and manage uploaded images
+          - generic [ref=e37]:
+            - generic [ref=e38]:
+              - textbox "Search images by name" [ref=e40]:
+                - /placeholder: Search images by name...
+              - button "Search" [ref=e41]
+            - generic [ref=e43]:
+              - generic [ref=e44]: "Filter by label:"
+              - combobox "Filter images by label" [ref=e45]:
+                - option "All labels" [selected]
+                - option "indoor"
+                - option "animal"
+                - option "outdoor"
+                - option "cat"
+                - option "dog"
+                - option "food"
+                - option "landscape"
+                - option "nature"
+                - option "person"
+                - option "portrait"
+                - option "building"
+                - option "technology"
+                - option "vehicle"
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - img "sample-cat-001.jpg" [ref=e50] [cursor=pointer]
+              - generic [ref=e51]:
+                - paragraph [ref=e53]: sample-cat-001.jpg
+                - generic [ref=e54]: 3 labels
+                - generic [ref=e55]:
+                  - generic [ref=e56] [cursor=pointer]:
+                    - generic [ref=e57]: cat
+                    - generic [ref=e58]: 85%
+                  - generic [ref=e59] [cursor=pointer]:
+                    - generic [ref=e60]: animal
+                    - generic [ref=e61]: 95%
+                  - generic [ref=e62] [cursor=pointer]:
+                    - generic [ref=e63]: indoor
+                    - generic [ref=e64]: 80%
+                  - button "Add new label" [ref=e65]: +
+            - generic [ref=e66]:
+              - img "sample-dog-001.jpg" [ref=e68] [cursor=pointer]
+              - generic [ref=e69]:
+                - paragraph [ref=e71]: sample-dog-001.jpg
+                - generic [ref=e72]: 3 labels
+                - generic [ref=e73]:
+                  - generic [ref=e74] [cursor=pointer]:
+                    - generic [ref=e75]: dog
+                    - generic [ref=e76]: 100%
+                  - generic [ref=e77] [cursor=pointer]:
+                    - generic [ref=e78]: animal
+                    - generic [ref=e79]: 98%
+                  - generic [ref=e80] [cursor=pointer]:
+                    - generic [ref=e81]: outdoor
+                    - generic [ref=e82]: 90%
+                  - button "Add new label" [ref=e83]: +
+            - generic [ref=e84]:
+              - img "sample-landscape-001.jpg" [ref=e86] [cursor=pointer]
+              - generic [ref=e87]:
+                - paragraph [ref=e89]: sample-landscape-001.jpg
+                - generic [ref=e90]: 3 labels
+                - generic [ref=e91]:
+                  - generic [ref=e92] [cursor=pointer]:
+                    - generic [ref=e93]: nature
+                    - generic [ref=e94]: 100%
+                  - generic [ref=e95] [cursor=pointer]:
+                    - generic [ref=e96]: outdoor
+                    - generic [ref=e97]: 100%
+                  - generic [ref=e98] [cursor=pointer]:
+                    - generic [ref=e99]: landscape
+                    - generic [ref=e100]: 95%
+                  - button "Add new label" [ref=e101]: +
+            - img "sample-person-001.jpg" [ref=e106] [cursor=pointer]
+            - img "sample-food-001.jpg" [ref=e117] [cursor=pointer]
+    - contentinfo [ref=e124]:
+      - paragraph [ref=e127]: AI Annotation Tool v2 - Built with Next.js and React
+  - button "Open Next.js Dev Tools" [ref=e133] [cursor=pointer]:
+    - img [ref=e134]
+  - alert [ref=e139]
+```

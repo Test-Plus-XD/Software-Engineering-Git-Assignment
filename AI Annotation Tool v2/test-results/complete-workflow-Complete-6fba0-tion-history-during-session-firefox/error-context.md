@@ -1,0 +1,59 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - img
+      - generic:
+        - img
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - heading "AI Annotation Tool" [level=1] [ref=e7]
+        - navigation "Main navigation" [ref=e8]:
+          - generic [ref=e9]:
+            - link "Upload" [ref=e10] [cursor=pointer]:
+              - /url: "#upload"
+            - link "Gallery" [ref=e11] [cursor=pointer]:
+              - /url: "#gallery"
+    - main [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - heading "Welcome to AI Annotation Tool" [level=2] [ref=e15]
+          - paragraph [ref=e16]: Upload, organise, and annotate images with powerful AI-assisted labelling tools. Build datasets efficiently with the intuitive interface.
+        - generic [ref=e18]:
+          - heading "Upload New Images" [level=3] [ref=e19]
+          - generic [ref=e20]:
+            - generic [ref=e22]:
+              - img [ref=e24]
+              - paragraph [ref=e26]: Drag and drop your image here
+              - paragraph [ref=e27]: or click to choose a file
+              - button "Choose File" [ref=e28]
+              - paragraph [ref=e29]: "Supported formats: JPEG, PNG, GIF, WebP (max 10.0 MB)"
+            - button "Upload" [disabled] [ref=e31]
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - heading "Image Gallery" [level=3] [ref=e34]
+            - paragraph [ref=e35]: Browse and manage uploaded images
+          - generic [ref=e37]:
+            - generic [ref=e38]:
+              - textbox "Search images by name" [ref=e40]:
+                - /placeholder: Search images by name...
+              - button "Search" [ref=e41]
+            - generic [ref=e43]:
+              - generic [ref=e44]: "Filter by label:"
+              - combobox "Filter images by label" [disabled] [ref=e45]:
+                - option "All labels" [selected]
+              - generic [ref=e46]: Loading...
+          - generic [ref=e48]:
+            - heading "Loading" [level=3] [ref=e50]
+            - paragraph [ref=e51]: Fetching images...
+    - contentinfo [ref=e52]:
+      - paragraph [ref=e55]: AI Annotation Tool v2 - Built with Next.js and React
+  - button "Open Next.js Dev Tools" [ref=e61] [cursor=pointer]:
+    - img [ref=e62]
+  - alert [ref=e66]
+```

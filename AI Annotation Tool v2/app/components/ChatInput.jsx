@@ -28,6 +28,7 @@ const ChatInput = ({
             <div className="flex space-x-2">
                 <input
                     type="text"
+                    data-testid="chat-input"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -40,6 +41,7 @@ const ChatInput = ({
                      disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
+                    data-testid="send-button"
                     onClick={onSendMessage}
                     disabled={isLoading || !inputMessage.trim()}
                     className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 

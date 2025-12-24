@@ -36,6 +36,9 @@ export async function PATCH(request) {
         // Convert percentage to decimal
         const confidenceDecimal = confidence / 100;
 
+        // Get user info from request headers (if available)
+        const userEmail = request.headers.get('x-user-email') || 'anonymous';
+
         // Get label ID
         const labelId = getLabelIdByName(labelName);
         if (!labelId) {
@@ -45,8 +48,8 @@ export async function PATCH(request) {
             );
         }
 
-        // Update annotation
-        const annotation = updateAnnotationConfidence(imageId, labelId, confidenceDecimal);
+        // Update annotation with editor tracking
+        const annotation = updateAnnotationConfidence(imageId, labelId, confidenceDecimal, userEmail);
 
         return NextResponse.json({
             success: true,
@@ -130,6 +133,9 @@ export async function POST(request) {
         // Convert percentage to decimal
         const confidenceDecimal = confidence / 100;
 
+        // Get user info from request headers (if available)
+        const userEmail = request.headers.get('x-user-email') || 'anonymous';
+
         // Get or create label
         let labelId = getLabelIdByName(labelName);
         if (!labelId) {
@@ -138,8 +144,8 @@ export async function POST(request) {
             labelId = newLabel.label_id;
         }
 
-        // Create annotation
-        const annotation = createAnnotation(imageId, labelId, confidenceDecimal);
+        // Create annotation with creator tracking
+        const annotation = createAnnotation(imageId, labelId, confidenceDecimal, userEmail);
 
         return NextResponse.json({
             success: true,

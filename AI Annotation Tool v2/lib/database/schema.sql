@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS images (
     file_size INTEGER NOT NULL,
     mime_type TEXT NOT NULL,
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NULL,  -- User who uploaded/created the record
+    last_edited_by TEXT NULL  -- User who last modified the record
 );
 
 -- Labels table stores all available labels that can be applied to images
@@ -33,6 +35,8 @@ CREATE TABLE IF NOT EXISTS annotations (
     label_id INTEGER NOT NULL,
     confidence REAL DEFAULT 1.0 CHECK(confidence >= 0.0 AND confidence <= 1.0),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NULL,  -- User who created this annotation
+    last_edited_by TEXT NULL,  -- User who last modified this annotation
     FOREIGN KEY (image_id) REFERENCES images(image_id) ON DELETE CASCADE,
     FOREIGN KEY (label_id) REFERENCES labels(label_id) ON DELETE CASCADE,
     UNIQUE(image_id, label_id)

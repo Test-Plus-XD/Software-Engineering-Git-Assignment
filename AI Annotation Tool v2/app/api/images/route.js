@@ -207,8 +207,8 @@ export async function POST(request) {
 
       // Begin database transaction
       const insertImage = db.prepare(`
-        INSERT INTO images (filename, original_name, file_path, file_size, mime_type)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO images (filename, original_name, file_path, file_size, mime_type, created_by)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
 
       const insertLabel = db.prepare(`
@@ -221,9 +221,12 @@ export async function POST(request) {
       `);
 
       const insertAnnotation = db.prepare(`
-        INSERT INTO annotations (image_id, label_id, confidence)
-        VALUES (?, ?, ?)
+        INSERT INTO annotations (image_id, label_id, confidence, created_by)
+        VALUES (?, ?, ?, ?)
       `);
+
+      // Get user info from request headers (if available)
+      const userEmail = request.headers.get('x-user-email') || 'anonymous';
 
       // Insert image record with Firebase Storage URL
       const imageResult = insertImage.run(
@@ -231,7 +234,8 @@ export async function POST(request) {
         file.name,
         firebaseResult.imageUrl,
         file.size,
-        file.type
+        file.type,
+        userEmail
       );
 
       const imageId = imageResult.lastInsertRowid;
@@ -246,7 +250,7 @@ export async function POST(request) {
         const labelRecord = getLabelId.get(label.name);
 
         // Create annotation
-        insertAnnotation.run(imageId, labelRecord.label_id, label.confidence);
+        insertAnnotation.run(imageId, labelRecord.label_id, label.confidence, userEmail);
 
         processedLabels.push({
           name: label.name,

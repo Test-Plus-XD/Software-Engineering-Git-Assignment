@@ -10,7 +10,8 @@ import { deleteFromFirebase, extractFilenameFromUrl } from '../../../../lib/util
 // GET /api/images/[id] - Get a specific image by ID
 export async function GET(request, { params }) {
   try {
-    const imageId = parseInt(params.id);
+    const resolvedParams = await params;
+    const imageId = parseInt(resolvedParams.id);
 
     if (isNaN(imageId)) {
       return NextResponse.json(
@@ -44,7 +45,8 @@ export async function GET(request, { params }) {
 // PUT /api/images/[id] - Update image metadata and labels
 export async function PUT(request, { params }) {
   try {
-    const imageId = parseInt(params.id);
+    const resolvedParams = await params;
+    const imageId = parseInt(resolvedParams.id);
 
     if (isNaN(imageId)) {
       return NextResponse.json(
@@ -105,7 +107,8 @@ export async function PUT(request, { params }) {
 // DELETE /api/images/[id] - Delete image record and file from Firebase Storage
 export async function DELETE(request, { params }) {
   try {
-    const imageId = parseInt(params.id);
+    const resolvedParams = await params;
+    const imageId = parseInt(resolvedParams.id);
 
     if (isNaN(imageId)) {
       return NextResponse.json(

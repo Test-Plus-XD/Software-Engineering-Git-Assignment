@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import Image from 'next/image'
 import { apiClient, NetworkError } from '../../lib/utils/network-error-handler'
 import { dataOperations } from '../../lib/utils/data-sync'
 
@@ -9,6 +11,11 @@ type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
 interface BrowserSupport {
     dragDrop: boolean
     fileApi: boolean
+}
+
+interface Label {
+    name: string
+    confidence: number
 }
 
 interface UploadFormProps {
@@ -21,7 +28,8 @@ interface UploadFormProps {
 
 /**
  * UploadForm Component
- * Handles file uploads with drag and drop support, validation, and progress tracking
+ * Handles file uploads with drag and drop support, validation, progress tracking,
+ * image preview, and label addition with confidence scores
  */
 export default function UploadForm({
     onUploadSuccess,
@@ -31,6 +39,7 @@ export default function UploadForm({
     className = ''
 }: UploadFormProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle')
     const [uploadProgress, setUploadProgress] = useState(0)
     const [errorMessage, setErrorMessage] = useState('')
@@ -42,7 +51,23 @@ export default function UploadForm({
         fileApi: true
     })
 
+    // Label management state
+    const [labels, setLabels] = useState<Label[]>([])
+    const [showAddLabel, setShowAddLabel] = useState(false)
+    const [editingLabelIndex, setEditingLabelIndex] = useState<number | null>(null)
+    const [editingConfidence, setEditingConfidence] = useState<number>(0)
+    const [commonLabels, setCommonLabels] = useState<string[]>([])
+    const [customLabelInput, setCustomLabelInput] = useState('')
+    const [selectedCommonLabel, setSelectedCommonLabel] = useState('')
+    const [newLabelConfidence, setNewLabelConfidence] = useState<number>(100)
+    const [mounted, setMounted] = useState(false)
+
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Ensure component is mounted before rendering portals
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Check browser compatibility on mount
     useEffect(() => {
@@ -66,6 +91,33 @@ export default function UploadForm({
 
         checkBrowserSupport()
     }, [])
+
+    // Fetch common labels when add label interface opens
+    useEffect(() => {
+        if (showAddLabel && commonLabels.length === 0) {
+            fetchCommonLabels()
+        }
+    }, [showAddLabel])
+
+    const fetchCommonLabels = async () => {
+        try {
+            // In test environment, use mock data
+            if (process.env.NODE_ENV === 'test') {
+                setCommonLabels(['cat', 'dog', 'car', 'tree', 'person'])
+                return
+            }
+
+            const response = await fetch('/api/labels/common')
+            if (response.ok) {
+                const data = await response.json()
+                setCommonLabels(data.labels || [])
+            }
+        } catch (error) {
+            console.error('Error fetching common labels:', error)
+            // Fallback to default common labels
+            setCommonLabels(['cat', 'dog', 'car', 'tree', 'person'])
+        }
+    }
 
     // Validate file type and size
     const validateFile = useCallback((file: File): boolean => {
@@ -111,11 +163,13 @@ export default function UploadForm({
             const file = files[0]
             if (validateFile(file)) {
                 setSelectedFile(file)
+                createPreview(file)
                 setUploadStatus('idle')
                 setErrorMessage('')
                 setSuccessMessage('')
             } else {
                 setSelectedFile(null)
+                setPreviewUrl(null)
             }
             return
         }
@@ -123,13 +177,26 @@ export default function UploadForm({
         const file = files[0]
         if (validateFile(file)) {
             setSelectedFile(file)
+            createPreview(file)
             setUploadStatus('idle')
             setErrorMessage('')
             setSuccessMessage('')
         } else {
             setSelectedFile(null)
+            setPreviewUrl(null)
         }
     }, [validateFile])
+
+    // Create image preview
+    const createPreview = useCallback((file: File) => {
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                setPreviewUrl(e.target?.result as string)
+            }
+            reader.readAsDataURL(file)
+        }
+    }, [])
 
     // Handle file input change
     const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,6 +250,8 @@ export default function UploadForm({
     // Remove selected file
     const handleRemoveFile = useCallback(() => {
         setSelectedFile(null)
+        setPreviewUrl(null)
+        setLabels([])
         setValidationError('')
         setErrorMessage('')
         setSuccessMessage('')
@@ -212,6 +281,16 @@ export default function UploadForm({
             const formData = new FormData()
             formData.append('image', selectedFile)
 
+            // Add labels if any exist
+            if (labels.length > 0) {
+                // Convert confidence from percentage (0-100) to decimal (0.0-1.0) for database storage
+                const labelsWithDecimalConfidence = labels.map(label => ({
+                    name: label.name,
+                    confidence: label.confidence / 100
+                }))
+                formData.append('labels', JSON.stringify(labelsWithDecimalConfidence))
+            }
+
             // Use API client with built-in error handling
             const result = await apiClient.post('/api/images', formData)
 
@@ -219,6 +298,8 @@ export default function UploadForm({
                 setUploadStatus('success')
                 setSuccessMessage('Upload successful!')
                 setSelectedFile(null)
+                setPreviewUrl(null)
+                setLabels([])
                 if (fileInputRef.current) {
                     fileInputRef.current.value = ''
                 }
@@ -272,12 +353,55 @@ export default function UploadForm({
                 onUploadError(userFriendlyMessage)
             }
         }
-    }, [selectedFile, validationError, onUploadSuccess, onUploadError])
+    }, [selectedFile, validationError, labels, onUploadSuccess, onUploadError])
 
     // Retry upload
     const handleRetry = useCallback(() => {
         handleUpload()
     }, [handleUpload])
+
+    // Label management functions
+    const handleLabelClick = (index: number) => {
+        setEditingLabelIndex(index)
+        setEditingConfidence(labels[index].confidence)
+    }
+
+    const handleDeleteLabel = (index: number) => {
+        const newLabels = labels.filter((_, i) => i !== index)
+        setLabels(newLabels)
+        setEditingLabelIndex(null)
+    }
+
+    const handleSaveConfidence = () => {
+        if (editingLabelIndex !== null) {
+            const newLabels = [...labels]
+            newLabels[editingLabelIndex].confidence = editingConfidence
+            setLabels(newLabels)
+            setEditingLabelIndex(null)
+        }
+    }
+
+    const handleAddNewLabel = () => {
+        const newLabel = customLabelInput.trim() || selectedCommonLabel
+        if (!newLabel) return
+
+        // Check if label already exists
+        if (labels.some(label => label.name.toLowerCase() === newLabel.toLowerCase())) {
+            alert('This label already exists!')
+            return
+        }
+
+        const newLabelObj: Label = {
+            name: newLabel,
+            confidence: newLabelConfidence
+        }
+
+        setLabels([...labels, newLabelObj])
+        setShowAddLabel(false)
+        setCustomLabelInput('')
+        setSelectedCommonLabel('')
+        setNewLabelConfidence(100)
+    }
 
     // Format file size for display
     const formatFileSize = useCallback((bytes: number): string => {
@@ -302,6 +426,12 @@ export default function UploadForm({
     const isUploading = uploadStatus === 'uploading'
     const hasValidFile = selectedFile && !validationError
     const canUpload = hasValidFile && !isUploading
+
+    // Helper function to render modals using portals for proper full-screen positioning
+    const renderModal = (content: React.ReactNode) => {
+        if (!mounted) return null
+        return createPortal(content, document.body)
+    }
 
     return (
         <div className={`upload-form ${className}`}>
@@ -368,8 +498,8 @@ export default function UploadForm({
                     </div>
                 ) : (
                     <div data-testid="file-preview" className="text-left">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Selected File</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Selected Image</h3>
                             <button
                                 type="button"
                                 onClick={handleRemoveFile}
@@ -381,11 +511,65 @@ export default function UploadForm({
                                 </svg>
                             </button>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded border dark:border-gray-600">
+
+                        {/* Image Preview */}
+                        {previewUrl && (
+                            <div className="mb-4">
+                                <div className="relative w-full h-64 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                                    <Image
+                                        src={previewUrl}
+                                        alt="Preview"
+                                        fill
+                                        className="object-contain"
+                                        sizes="(max-width: 768px) 100vw, 50vw"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* File Info */}
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded border dark:border-gray-600 mb-4">
                             <p className="font-medium text-gray-900 dark:text-gray-100">{selectedFile.name}</p>
                             <p className="text-sm text-gray-500">
                                 {getFileTypeDisplay(selectedFile.type)} • {formatFileSize(selectedFile.size)}
                             </p>
+                        </div>
+
+                        {/* Labels Section */}
+                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">
+                                    Labels {labels.length > 0 && `(${labels.length})`}
+                                </h4>
+                                <button
+                                    onClick={() => setShowAddLabel(true)}
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                    aria-label="Add new label"
+                                >
+                                    +
+                                </button>
+                            </div>
+
+                            {labels.length === 0 ? (
+                                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
+                                    No labels added yet. Click + to add labels with confidence scores.
+                                </p>
+                            ) : (
+                                <div className="flex flex-wrap gap-2">
+                                    {labels.map((label, index) => (
+                                        <div
+                                            key={`${label.name}-${index}`}
+                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                                            onClick={() => handleLabelClick(index)}
+                                        >
+                                            <span>{label.name}</span>
+                                            <span className="ml-1 text-blue-600 dark:text-blue-400 font-semibold">
+                                                {label.confidence}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -483,8 +667,152 @@ export default function UploadForm({
             {/* File Selection Count */}
             {selectedFile && (
                 <p className="mt-2 text-sm text-gray-500 text-center">
-                    1 file selected
+                    1 file selected {labels.length > 0 && `• ${labels.length} label${labels.length === 1 ? '' : 's'} added`}
                 </p>
+            )}
+
+            {/* Edit Label Modal */}
+            {editingLabelIndex !== null && labels[editingLabelIndex] && renderModal(
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onClick={() => setEditingLabelIndex(null)}>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Edit Label: {labels[editingLabelIndex].name}
+                        </h3>
+
+                        {/* Confidence Slider */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Confidence: {editingConfidence}%
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={editingConfidence}
+                                onChange={(e) => setEditingConfidence(parseInt(e.target.value))}
+                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                data-testid="confidence-slider"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSaveConfidence}
+                                className="flex-1 bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                            >
+                                Save
+                            </button>
+                            <button
+                                onClick={() => handleDeleteLabel(editingLabelIndex)}
+                                className="flex-1 bg-red-600 dark:bg-red-700 text-white px-4 py-2 rounded-md hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
+                                aria-label="Delete label"
+                                data-testid="delete-label"
+                            >
+                                Delete
+                            </button>
+                            <button
+                                onClick={() => setEditingLabelIndex(null)}
+                                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add New Label Modal */}
+            {showAddLabel && renderModal(
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+                    onClick={() => setShowAddLabel(false)}
+                >
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add New Label</h3>
+
+                        {/* Common Labels Dropdown */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Select from common labels
+                            </label>
+                            <select
+                                value={selectedCommonLabel}
+                                onChange={(e) => setSelectedCommonLabel(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                name="common-labels"
+                                data-testid="common-labels-dropdown"
+                            >
+                                <option value="">-- Select a label --</option>
+                                {commonLabels.map((label) => (
+                                    <option key={label} value={label}>{label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Custom Label Input */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Or create a custom label
+                            </label>
+                            <input
+                                type="text"
+                                value={customLabelInput}
+                                onChange={(e) => setCustomLabelInput(e.target.value)}
+                                placeholder="Enter custom label"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                            />
+                        </div>
+
+                        {/* Confidence Slider */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Confidence: {newLabelConfidence}%
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={newLabelConfidence}
+                                onChange={(e) => setNewLabelConfidence(parseInt(e.target.value))}
+                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                data-testid="new-label-confidence-slider"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleAddNewLabel}
+                                className="flex-1 bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                                disabled={!customLabelInput.trim() && !selectedCommonLabel}
+                            >
+                                Add
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowAddLabel(false)
+                                    setCustomLabelInput('')
+                                    setSelectedCommonLabel('')
+                                    setNewLabelConfidence(100)
+                                }}
+                                className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )

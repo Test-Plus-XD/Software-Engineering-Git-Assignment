@@ -251,6 +251,11 @@ export default function ImageGallery({
                             // Handle label click - could be used for filtering
                             console.log('Label clicked:', label)
                         }}
+                        onImageDelete={(imageId: number) => {
+                            // Handle image deletion - refresh the gallery
+                            console.log('Image deleted:', imageId)
+                            // The auto-refresh will handle updating the gallery
+                        }}
                         className="mx-auto"
                     />
                 ))}

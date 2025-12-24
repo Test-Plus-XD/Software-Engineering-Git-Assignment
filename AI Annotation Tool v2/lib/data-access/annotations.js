@@ -11,9 +11,10 @@ const { query, queryOne, run } = require('../database/connection');
  * @param {number} imageId - Image ID
  * @param {number} labelId - Label ID
  * @param {number} confidence - New confidence value (0-1)
+ * @param {string} userEmail - User who is making the update
  * @returns {Object} Updated annotation
  */
-async function updateAnnotationConfidence(imageId, labelId, confidence) {
+async function updateAnnotationConfidence(imageId, labelId, confidence, userEmail = 'anonymous') {
     try {
         // Validate confidence range
         if (confidence < 0 || confidence > 1) {
@@ -31,12 +32,12 @@ async function updateAnnotationConfidence(imageId, labelId, confidence) {
                 throw new Error('Annotation not found');
             }
 
-            // Update confidence using run() for UPDATE statements
+            // Update confidence and last_edited_by using run() for UPDATE statements
             run(`
                 UPDATE annotations
-                SET confidence = ?
+                SET confidence = ?, last_edited_by = ?
                 WHERE image_id = ? AND label_id = ?
-            `, [confidence, imageId, labelId]);
+            `, [confidence, userEmail, imageId, labelId]);
 
             // Return updated annotation
             return queryOne(`
@@ -88,9 +89,10 @@ async function deleteAnnotation(imageId, labelId) {
  * @param {number} imageId - Image ID
  * @param {number} labelId - Label ID
  * @param {number} confidence - Confidence value (0-1), defaults to 1.0
+ * @param {string} userEmail - User who is creating the annotation
  * @returns {Object} Created annotation
  */
-async function createAnnotation(imageId, labelId, confidence = 1.0) {
+async function createAnnotation(imageId, labelId, confidence = 1.0, userEmail = 'anonymous') {
     try {
         // Validate confidence range
         if (confidence < 0 || confidence > 1) {
@@ -108,11 +110,11 @@ async function createAnnotation(imageId, labelId, confidence = 1.0) {
                 throw new Error('Annotation already exists for this image and label');
             }
 
-            // Create annotation using run() for INSERT statements
+            // Create annotation with creator tracking using run() for INSERT statements
             run(`
-                INSERT INTO annotations (image_id, label_id, confidence)
-                VALUES (?, ?, ?)
-            `, [imageId, labelId, confidence]);
+                INSERT INTO annotations (image_id, label_id, confidence, created_by)
+                VALUES (?, ?, ?, ?)
+            `, [imageId, labelId, confidence, userEmail]);
 
             // Get the created annotation
             return queryOne(`
@@ -143,6 +145,8 @@ async function getAnnotationsByImage(imageId) {
                 a.label_id,
                 a.confidence,
                 a.created_at,
+                a.created_by,
+                a.last_edited_by,
                 l.label_name,
                 l.label_description
             FROM annotations a

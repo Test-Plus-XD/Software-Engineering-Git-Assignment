@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { apiClient } from '../../lib/utils/network-error-handler'
 import { dataOperations } from '../../lib/utils/data-sync'
 
@@ -13,6 +14,12 @@ export default function DatabaseResetButton() {
     const [showConfirmation, setShowConfirmation] = useState(false)
     const [resetStatus, setResetStatus] = useState(null)
     const [isMessageFading, setIsMessageFading] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    // Ensure component is mounted before rendering portals
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Auto-fade success messages after 4 seconds
     useEffect(() => {
@@ -72,6 +79,12 @@ export default function DatabaseResetButton() {
         setShowConfirmation(false)
     }
 
+    // Helper function to render modals using portals for proper full-screen positioning
+    const renderModal = (content) => {
+        if (!mounted) return null
+        return createPortal(content, document.body)
+    }
+
     return (
         <>
             {/* Container for button and message */}
@@ -127,7 +140,7 @@ export default function DatabaseResetButton() {
             </div>
 
             {/* Confirmation Modal - Portal to body */}
-            {showConfirmation && (
+            {showConfirmation && renderModal(
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]"
                     onClick={(e) => {

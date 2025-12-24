@@ -7,26 +7,52 @@
 
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const AuthContext = createContext({});
+// Define types for the authentication context
+interface User {
+    uid: string;
+    email: string;
+    displayName: string;
+    photoURL?: string;
+    emailVerified: boolean;
+    type: string;
+}
+
+interface AuthContextType {
+    user: User | null;
+    loading: boolean;
+    idToken: string | null;
+    signIn: (email: string, password: string) => Promise<User>;
+    signUp: (email: string, password: string, displayName: string) => Promise<User>;
+    signInWithGoogle: (googleIdToken: string) => Promise<User>;
+    signOut: () => Promise<void>;
+    verifyToken: () => Promise<boolean>;
+    refreshToken: () => Promise<void>;
+}
+
+interface AuthProviderProps {
+    children: ReactNode;
+}
+
+const AuthContext = createContext < AuthContextType | undefined > (undefined);
 
 /**
  * Authentication Provider Component
  * Manages Firebase authentication state and provides auth methods
  */
-export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [idToken, setIdToken] = useState(null);
+export function AuthProvider({ children }: AuthProviderProps) {
+    const [user, setUser] = useState < User | null > (null);
+    const [loading, setLoading] = useState < boolean > (true);
+    const [idToken, setIdToken] = useState < string | null > (null);
 
     /**
      * Sign in with email and password
      * @param {string} email - User email
      * @param {string} password - User password
-     * @returns {Promise<Object>} User data
+     * @returns {Promise<User>} User data
      */
-    const signIn = async (email, password) => {
+    const signIn = async (email: string, password: string): Promise<User> => {
         try {
             setLoading(true);
 
@@ -61,9 +87,9 @@ export function AuthProvider({ children }) {
      * @param {string} email - User email
      * @param {string} password - User password
      * @param {string} displayName - User display name
-     * @returns {Promise<Object>} User data
+     * @returns {Promise<User>} User data
      */
-    const signUp = async (email, password, displayName) => {
+    const signUp = async (email: string, password: string, displayName: string): Promise<User> => {
         try {
             setLoading(true);
 
@@ -94,9 +120,9 @@ export function AuthProvider({ children }) {
     /**
      * Sign in with Google OAuth using Vercel API
      * @param {string} googleIdToken - Google ID token
-     * @returns {Promise<Object>} User data
+     * @returns {Promise<User>} User data
      */
-    const signInWithGoogle = async (googleIdToken) => {
+    const signInWithGoogle = async (googleIdToken: string): Promise<User> => {
         try {
             setLoading(true);
 
@@ -140,7 +166,7 @@ export function AuthProvider({ children }) {
     /**
      * Sign out current user
      */
-    const signOut = async () => {
+    const signOut = async (): Promise<void> => {
         try {
             setLoading(true);
 
@@ -170,7 +196,7 @@ export function AuthProvider({ children }) {
      * Verify current ID token
      * @returns {Promise<boolean>} Token validity
      */
-    const verifyToken = async () => {
+    const verifyToken = async (): Promise<boolean> => {
         if (!idToken) return false;
 
         try {
@@ -193,7 +219,7 @@ export function AuthProvider({ children }) {
      * Refresh authentication token
      * This would typically handle token refresh automatically
      */
-    const refreshToken = async () => {
+    const refreshToken = async (): Promise<void> => {
         try {
             if (!user) return;
 
@@ -262,7 +288,7 @@ export function AuthProvider({ children }) {
         }
     }, [user, idToken]);
 
-    const value = {
+    const value: AuthContextType = {
         user,
         loading,
         idToken,
@@ -283,9 +309,9 @@ export function AuthProvider({ children }) {
 
 /**
  * Hook to use authentication context
- * @returns {Object} Authentication context value
+ * @returns {AuthContextType} Authentication context value
  */
-export function useAuth() {
+export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);
 
     if (context === undefined) {

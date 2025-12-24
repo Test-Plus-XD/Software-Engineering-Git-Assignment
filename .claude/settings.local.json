@@ -17,7 +17,8 @@
       "Bash(curl http://localhost:3000/api/images)",
       "Bash(curl:*)",
       "Bash(npm run test:db:seeding:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

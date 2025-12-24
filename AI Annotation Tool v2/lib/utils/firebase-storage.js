@@ -3,17 +3,18 @@
  * Provides helper functions for uploading and deleting images from Firebase Storage via Vercel API
  */
 
-const VERCEL_API_URL = process.env.VERCEL_API_URL || 'https://your-vercel-api.vercel.app';
+const VERCEL_API_URL = 'https://vercel-express-api-alpha.vercel.app';
+const API_PASSCODE = 'PourRice';
 
 /**
  * Upload an image to Firebase Storage via Vercel API
  * @param {File|Buffer} file - The file to upload
  * @param {string} originalName - Original filename
  * @param {string} folder - Folder path in Firebase Storage
- * @param {string} token - Firebase auth token
+ * @param {string} token - Firebase auth token (optional for this API)
  * @returns {Promise<Object>} Upload result with imageUrl, fileName, fileSize, mimeType
  */
-async function uploadToFirebase(file, originalName, folder = 'annotations', token) {
+async function uploadToFirebase(file, originalName, folder = 'Annotations', token) {
   try {
     // Handle mock scenario for testing
     if (token === 'mock-firebase-token' || process.env.NODE_ENV === 'test') {
@@ -37,28 +38,64 @@ async function uploadToFirebase(file, originalName, folder = 'annotations', toke
     // Handle different file types (Buffer for server-side, File for client-side)
     if (Buffer.isBuffer(file)) {
       // Server-side: Convert Buffer to Blob
-      const blob = new Blob([file], { type: 'image/jpeg' });
+      const blob = new Blob([file], { type: file.type || 'image/jpeg' });
       formData.append('image', blob, originalName);
     } else {
       // Client-side: Use File directly
       formData.append('image', file);
     }
 
-    // Make request to Vercel API
+    // Make request to Vercel API with proper headers
+    console.log('Making request to:', `${VERCEL_API_URL}/API/Images/upload?folder=${encodeURIComponent(folder)}`);
+
+    const headers = {
+      'x-api-passcode': API_PASSCODE
+    };
+
+    // Add authorization header if token is provided and not mock
+    if (token && token !== 'mock-firebase-token') {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    console.log('Headers:', headers);
+
     const response = await fetch(`${VERCEL_API_URL}/API/Images/upload?folder=${encodeURIComponent(folder)}`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
+      headers: headers,
       body: formData
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    const responseText = await response.text();
+    console.log('Response text:', responseText);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Upload failed');
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = { error: responseText };
+      }
+
+      // Handle authentication errors specifically
+      if (response.status === 401) {
+        throw new Error('Authentication required: Please provide a valid Bearer token for image uploads');
+      } else if (response.status === 403) {
+        throw new Error('Access forbidden: Invalid authentication credentials');
+      }
+
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON:', parseError);
+      throw new Error(`Invalid JSON response: ${responseText.substring(0, 200)}...`);
+    }
 
     // Return standardized response
     return {
@@ -77,8 +114,8 @@ async function uploadToFirebase(file, originalName, folder = 'annotations', toke
 
 /**
  * Delete an image from Firebase Storage via Vercel API
- * @param {string} filePath - The file path in Firebase Storage (e.g., "annotations/1234567890_image.jpg")
- * @param {string} token - Firebase auth token
+ * @param {string} filePath - The file path in Firebase Storage (e.g., "Annotations/1234567890_image.jpg")
+ * @param {string} token - Firebase auth token (optional for this API)
  * @returns {Promise<Object>} Deletion result
  */
 async function deleteFromFirebase(filePath, token) {
@@ -92,22 +129,27 @@ async function deleteFromFirebase(filePath, token) {
       };
     }
 
-    // Extract folder and filename from filePath
-    const lastSlashIndex = filePath.lastIndexOf('/');
-    const folder = filePath.substring(0, lastSlashIndex);
-    const fileName = filePath.substring(lastSlashIndex + 1);
-
     // Make request to Vercel API
-    const response = await fetch(`${VERCEL_API_URL}/API/Images/delete?folder=${encodeURIComponent(folder)}&fileName=${encodeURIComponent(fileName)}`, {
+    const response = await fetch(`${VERCEL_API_URL}/API/Images/delete`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        'x-api-passcode': API_PASSCODE,
+        'Content-Type': 'application/json',
+        ...(token && token !== 'mock-firebase-token' ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        filePath: filePath
+      })
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText };
+      }
 
       // 404 is acceptable - file may already be deleted
       if (response.status === 404) {
@@ -119,7 +161,7 @@ async function deleteFromFirebase(filePath, token) {
         };
       }
 
-      throw new Error(errorData.error || 'Deletion failed');
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();

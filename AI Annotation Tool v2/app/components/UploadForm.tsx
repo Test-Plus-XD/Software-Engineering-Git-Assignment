@@ -310,10 +310,10 @@ export default function UploadForm({
                 data-testid="drop-zone"
                 className={`
                     border-2 border-dashed rounded-lg p-8 text-center transition-colors touch-manipulation
-                    ${isDragOver && browserSupport.dragDrop ? 'border-blue-500 bg-blue-50 drag-over' : 'border-gray-300'}
-                    ${hasValidFile ? 'border-green-500 bg-green-50' : ''}
-                    ${validationError ? 'border-red-500 bg-red-50' : ''}
-                    ${!browserSupport.fileApi ? 'opacity-50 cursor-not-allowed' : 'active:bg-blue-100'}
+                    ${isDragOver && browserSupport.dragDrop ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 drag-over' : 'border-gray-300 dark:border-gray-600'}
+                    ${hasValidFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''}
+                    ${validationError ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : ''}
+                    ${!browserSupport.fileApi ? 'opacity-50 cursor-not-allowed' : 'active:bg-blue-100 dark:active:bg-blue-900/20'}
                 `}
                 onDragEnter={browserSupport.dragDrop ? handleDragEnter : undefined}
                 onDragLeave={browserSupport.dragDrop ? handleDragLeave : undefined}
@@ -327,7 +327,7 @@ export default function UploadForm({
                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </div>
-                        <p className="text-lg font-medium text-gray-900 mb-2">
+                        <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                             {browserSupport.dragDrop ? 'Drag and drop your image here' : 'Choose your image file'}
                         </p>
                         <p className="text-sm text-gray-500 mb-4">
@@ -369,7 +369,7 @@ export default function UploadForm({
                 ) : (
                     <div data-testid="file-preview" className="text-left">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-medium text-gray-900">Selected File</h3>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Selected File</h3>
                             <button
                                 type="button"
                                 onClick={handleRemoveFile}
@@ -381,8 +381,8 @@ export default function UploadForm({
                                 </svg>
                             </button>
                         </div>
-                        <div className="bg-white p-4 rounded border">
-                            <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded border dark:border-gray-600">
+                            <p className="font-medium text-gray-900 dark:text-gray-100">{selectedFile.name}</p>
                             <p className="text-sm text-gray-500">
                                 {getFileTypeDisplay(selectedFile.type)} • {formatFileSize(selectedFile.size)}
                             </p>

@@ -6,6 +6,7 @@ import ImageGallery from "./components/ImageGallery";
 import UploadForm from "./components/UploadForm";
 import SearchBar from "./components/SearchBar";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ComponentErrorBoundary from "./components/ComponentErrorBoundary";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -67,7 +68,9 @@ export default function Home() {
                 <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
                   Upload New Images
                 </h3>
-                <UploadForm />
+                <ComponentErrorBoundary componentName="UploadForm">
+                  <UploadForm />
+                </ComponentErrorBoundary>
               </div>
             </section>
 
@@ -83,14 +86,18 @@ export default function Home() {
               </div>
 
               {/* Search and Filter Bar */}
-              <SearchBar />
+              <ComponentErrorBoundary componentName="SearchBar">
+                <SearchBar />
+              </ComponentErrorBoundary>
 
               {/* Image Gallery with Search Parameters */}
-              <ImageGallery
-                page={page}
-                searchQuery={searchQuery}
-                selectedLabel={selectedLabel}
-              />
+              <ComponentErrorBoundary componentName="ImageGallery">
+                <ImageGallery
+                  page={page}
+                  searchQuery={searchQuery}
+                  selectedLabel={selectedLabel}
+                />
+              </ComponentErrorBoundary>
             </section>
           </div>
         </main>

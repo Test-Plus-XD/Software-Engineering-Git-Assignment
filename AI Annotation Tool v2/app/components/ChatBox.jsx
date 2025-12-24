@@ -10,6 +10,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { generateText } from '../../lib/ai/gemini';
+import ChatMessage from './ChatMessage';
+import ChatInput from './ChatInput';
 
 const ChatBox = () => {
     const { user, loading } = useAuth();
@@ -179,28 +181,7 @@ const ChatBox = () => {
                     </div>
                 ) : (
                     messages.map((message) => (
-                        <div
-                            key={message.id}
-                            data-testid={message.type === 'user' ? 'user-message' : 'ai-message'}
-                            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                            <div
-                                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user'
-                                    ? 'bg-blue-500 text-white'
-                                    : message.isError
-                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                                    }`}
-                            >
-                                <p className="text-sm">{message.content}</p>
-                                <p className={`text-xs mt-1 ${message.type === 'user'
-                                    ? 'text-blue-100'
-                                    : 'text-gray-500 dark:text-gray-400'
-                                    }`}>
-                                    {formatTime(message.timestamp)}
-                                </p>
-                            </div>
-                        </div>
+                        <ChatMessage key={message.id} message={message} />
                     ))
                 )}
 
@@ -224,33 +205,12 @@ const ChatBox = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex space-x-2">
-                    <input
-                        type="text"
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Type your message..."
-                        disabled={isLoading}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
-                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                     placeholder-gray-500 dark:placeholder-gray-400
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                     disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <button
-                        onClick={handleSendMessage}
-                        disabled={isLoading || !inputMessage.trim()}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     transition-colors duration-200"
-                    >
-                        Send
-                    </button>
-                </div>
-            </div>
+            <ChatInput
+                inputMessage={inputMessage}
+                setInputMessage={setInputMessage}
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+            />
         </div>
     );
 };

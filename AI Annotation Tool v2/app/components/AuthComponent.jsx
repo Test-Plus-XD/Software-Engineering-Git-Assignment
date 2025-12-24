@@ -1,13 +1,14 @@
 /**
  * Authentication Component
  * 
- * Simple authentication interface for sign in/sign up
+ * Simple authentication interface for sign in/sign up with Google OAuth support
  */
 
 'use client';
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import GoogleSignInButton from './GoogleSignInButton';
 
 const AuthComponent = () => {
     const { user, loading, signIn, signUp, signOut } = useAuth();
@@ -44,6 +45,10 @@ const AuthComponent = () => {
         }
     };
 
+    const handleGoogleError = (errorMessage) => {
+        setError(errorMessage);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center p-4">
@@ -56,6 +61,13 @@ const AuthComponent = () => {
     if (user) {
         return (
             <div data-testid="user-info" className="flex items-center space-x-4">
+                {user.photoURL && (
+                    <img
+                        src={user.photoURL}
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full"
+                    />
+                )}
                 <span className="text-gray-700 dark:text-gray-300">
                     Welcome, {user.displayName || user.email}
                 </span>
@@ -81,6 +93,23 @@ const AuthComponent = () => {
                     {error}
                 </div>
             )}
+
+            {/* Google Sign-In Button */}
+            <div className="mb-6">
+                <GoogleSignInButton onError={handleGoogleError} />
+            </div>
+
+            {/* Divider */}
+            <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                        Or continue with email
+                    </span>
+                </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 {isSignUp && (

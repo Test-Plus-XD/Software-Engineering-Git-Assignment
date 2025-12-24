@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
     };
 
     /**
-     * Sign in with Google OAuth
+     * Sign in with Google OAuth using Vercel API
      * @param {string} googleIdToken - Google ID token
      * @returns {Promise<Object>} User data
      */
@@ -100,23 +100,36 @@ export function AuthProvider({ children }) {
         try {
             setLoading(true);
 
-            const response = await fetch('/api/auth/google', {
+            const response = await fetch('https://vercel-express-api-alpha.vercel.app/API/Auth/google', {
                 method: 'POST',
                 headers: {
+                    'x-api-passcode': 'PourRice',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ idToken: googleIdToken })
             });
 
             if (!response.ok) {
-                throw new Error('Google authentication failed');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Google authentication failed');
             }
 
             const userData = await response.json();
-            setUser(userData);
+
+            // Map the Vercel API response to our expected format
+            const mappedUser = {
+                uid: userData.uid,
+                email: userData.email,
+                displayName: userData.displayName,
+                photoURL: userData.photoURL,
+                emailVerified: userData.emailVerified,
+                type: userData.profile?.type || 'customer'
+            };
+
+            setUser(mappedUser);
             setIdToken(userData.customToken);
 
-            return userData;
+            return mappedUser;
         } catch (error) {
             throw error;
         } finally {

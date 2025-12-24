@@ -420,3 +420,5 @@ FodyWeavers.xsd
 # Node.js dependencies
 /node_modules
 package-lock.json
+AI Annotation Tool v2/node_modules
+AI Annotation Tool v2/package-lock.json

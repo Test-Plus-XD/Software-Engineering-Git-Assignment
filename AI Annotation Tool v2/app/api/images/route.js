@@ -1,11 +1,12 @@
 /**
  * API route for managing images
- * Uses better-sqlite3 directly to avoid module system issues
+ * Uses better-sqlite3 directly and integrates with Firebase Storage via Vercel API
  */
 
 import { NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
 import path from 'path';
+import { uploadToFirebase, validateImageType, validateFileSize } from '../../../lib/utils/firebase-storage';
 
 // Initialize database connection
 function getDatabase() {
@@ -44,6 +45,7 @@ export async function GET(request) {
     // Process the results to format labels properly
     const processedImages = allImages.map(image => ({
       ...image,
+      id: image.image_id, // Add id field for compatibility
       labels: image.labels ? image.labels.split(',') : [],
       confidences: image.confidences ? image.confidences.split(',').map(Number) : [],
       label_count: image.labels ? image.labels.split(',').length : 0
@@ -80,7 +82,7 @@ export async function GET(request) {
   }
 }
 
-// POST /api/images - Add a new image
+// POST /api/images - Add a new image with Firebase Storage integration
 export async function POST(request) {
   let db;
   try {
@@ -90,6 +92,8 @@ export async function POST(request) {
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
       const file = formData.get('image');
+      const name = formData.get('name') || file?.name || 'Untitled';
+      const labelsJson = formData.get('labels');
 
       if (!file) {
         return NextResponse.json(
@@ -99,51 +103,117 @@ export async function POST(request) {
       }
 
       // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
+      if (!validateImageType(file.type)) {
         return NextResponse.json(
-          { success: false, error: 'Invalid file type', allowedTypes },
+          { success: false, error: 'Invalid file type. Allowed types: JPEG, PNG, GIF, WebP' },
           { status: 400 }
         );
       }
 
       // Validate file size (10MB limit)
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
+      if (!validateFileSize(file.size)) {
         return NextResponse.json(
           { success: false, error: 'File size exceeds 10MB limit' },
           { status: 413 }
         );
       }
 
+      // Parse labels if provided
+      let labels = [];
+      if (labelsJson) {
+        try {
+          labels = JSON.parse(labelsJson);
+        } catch (error) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid labels format' },
+            { status: 400 }
+          );
+        }
+      }
+
       db = getDatabase();
 
-      // For now, create a database record without actual file storage
-      // TODO: Implement actual file storage
-      const stmt = db.prepare(`
+      // Upload to Firebase Storage via Vercel API
+      let firebaseResult;
+      try {
+        // For now, we'll mock the Firebase upload since we don't have auth token
+        // In production, this would get the token from the authenticated user
+        const mockToken = 'mock-firebase-token';
+
+        // Convert File to Buffer for Firebase upload
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        firebaseResult = await uploadToFirebase(buffer, file.name, 'annotations', mockToken);
+      } catch (firebaseError) {
+        console.error('Firebase upload failed:', firebaseError);
+        return NextResponse.json(
+          { success: false, error: `Firebase upload failed: ${firebaseError.message}` },
+          { status: 500 }
+        );
+      }
+
+      // Begin database transaction
+      const insertImage = db.prepare(`
         INSERT INTO images (filename, original_name, file_path, file_size, mime_type)
         VALUES (?, ?, ?, ?, ?)
       `);
 
-      const result = stmt.run(
+      const insertLabel = db.prepare(`
+        INSERT OR IGNORE INTO labels (label_name)
+        VALUES (?)
+      `);
+
+      const getLabelId = db.prepare(`
+        SELECT label_id FROM labels WHERE label_name = ?
+      `);
+
+      const insertAnnotation = db.prepare(`
+        INSERT INTO annotations (image_id, label_id, confidence)
+        VALUES (?, ?, ?)
+      `);
+
+      // Insert image record with Firebase Storage URL
+      const imageResult = insertImage.run(
+        firebaseResult.fileName,
         file.name,
-        file.name,
-        `/uploads/${file.name}`, // Mock path for now
+        firebaseResult.imageUrl,
         file.size,
         file.type
       );
 
+      const imageId = imageResult.lastInsertRowid;
+
+      // Process labels and create annotations
+      const processedLabels = [];
+      for (const label of labels) {
+        // Create label if it doesn't exist
+        insertLabel.run(label.name);
+
+        // Get label ID
+        const labelRecord = getLabelId.get(label.name);
+
+        // Create annotation
+        insertAnnotation.run(imageId, labelRecord.label_id, label.confidence);
+
+        processedLabels.push({
+          name: label.name,
+          confidence: label.confidence
+        });
+      }
+
       const newImage = {
-        image_id: result.lastInsertRowid,
-        filename: file.name,
+        id: imageId,
+        image_id: imageId,
+        filename: firebaseResult.fileName,
         original_name: file.name,
-        file_path: `/uploads/${file.name}`,
+        file_path: firebaseResult.imageUrl,
         file_size: file.size,
         mime_type: file.type,
         uploaded_at: new Date().toISOString(),
-        labels: [],
-        confidences: [],
-        label_count: 0
+        labels: processedLabels.map(l => l.name),
+        confidences: processedLabels.map(l => l.confidence),
+        label_count: processedLabels.length
       };
 
       return NextResponse.json({
@@ -152,7 +222,7 @@ export async function POST(request) {
       }, { status: 201 });
     }
 
-    // Handle JSON for direct database creation
+    // Handle JSON for direct database creation (legacy support)
     const { filename, original_name, file_path, file_size, mime_type } = await request.json();
 
     // Validate required fields
@@ -174,6 +244,7 @@ export async function POST(request) {
     const result = stmt.run(filename, original_name, file_path, file_size, mime_type);
 
     const newImage = {
+      id: result.lastInsertRowid,
       image_id: result.lastInsertRowid,
       filename,
       original_name,

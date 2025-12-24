@@ -196,6 +196,7 @@ export default function UploadForm({
         try {
             const formData = new FormData()
             formData.append('image', selectedFile)
+            formData.append('name', selectedFile.name)
 
             // Use API client with built-in error handling
             const result = await apiClient.post('/api/images', formData)
@@ -210,6 +211,15 @@ export default function UploadForm({
 
                 // Notify successful upload and data sync
                 dataOperations.notifyUploadCompleted(result.data)
+
+                // Trigger revalidation to refresh gallery
+                try {
+                    const { revalidateGallery } = await import('../../actions/revalidate')
+                    await revalidateGallery()
+                } catch (revalidateError) {
+                    console.warn('Failed to revalidate gallery:', revalidateError)
+                    // Don't fail the upload if revalidation fails
+                }
 
                 if (onUploadSuccess) {
                     onUploadSuccess(result.data)

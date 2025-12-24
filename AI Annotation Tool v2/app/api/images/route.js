@@ -26,11 +26,13 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page')) || 1;
     const limit = parseInt(searchParams.get('limit')) || 10;
+    const search = searchParams.get('search') || '';
+    const labelFilter = searchParams.get('label') || '';
 
     db = getDatabase();
 
-    // Get all images with their labels
-    const allImages = db.prepare(`
+    // Build dynamic query based on filters
+    let baseQuery = `
       SELECT 
         i.*,
         GROUP_CONCAT(l.label_name) as labels,
@@ -38,9 +40,40 @@ export async function GET(request) {
       FROM images i
       LEFT JOIN annotations a ON i.image_id = a.image_id
       LEFT JOIN labels l ON a.label_id = l.label_id
-      GROUP BY i.image_id
-      ORDER BY i.uploaded_at DESC
-    `).all();
+    `;
+
+    let whereConditions = [];
+    let queryParams = [];
+
+    // Add search filter (search in image name/filename)
+    if (search.trim()) {
+      whereConditions.push(`(i.original_name LIKE ? OR i.filename LIKE ?)`);
+      const searchPattern = `%${search.trim()}%`;
+      queryParams.push(searchPattern, searchPattern);
+    }
+
+    // Add label filter
+    if (labelFilter.trim()) {
+      whereConditions.push(`i.image_id IN (
+        SELECT DISTINCT a2.image_id 
+        FROM annotations a2 
+        JOIN labels l2 ON a2.label_id = l2.label_id 
+        WHERE l2.label_name = ?
+      )`);
+      queryParams.push(labelFilter.trim());
+    }
+
+    // Add WHERE clause if we have conditions
+    if (whereConditions.length > 0) {
+      baseQuery += ` WHERE ${whereConditions.join(' AND ')}`;
+    }
+
+    baseQuery += ` GROUP BY i.image_id ORDER BY i.uploaded_at DESC`;
+
+    // Execute query with parameters
+    const allImages = queryParams.length > 0
+      ? db.prepare(baseQuery).all(...queryParams)
+      : db.prepare(baseQuery).all();
 
     // Process the results to format labels properly
     const processedImages = allImages.map(image => ({
@@ -67,6 +100,10 @@ export async function GET(request) {
         totalPages,
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1
+      },
+      filters: {
+        search: search,
+        label: labelFilter
       }
     });
   } catch (error) {

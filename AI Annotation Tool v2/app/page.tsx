@@ -1,11 +1,18 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation';
 import WaveBackground from "./components/WaveBackground";
 import ImageGallery from "./components/ImageGallery";
 import UploadForm from "./components/UploadForm";
+import SearchBar from "./components/SearchBar";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
+  const selectedLabel = searchParams.get('label') || '';
+  const page = parseInt(searchParams.get('page') || '1');
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-zinc-50 dark:bg-black relative">
@@ -74,7 +81,16 @@ export default function Home() {
                   Browse and manage uploaded images
                 </p>
               </div>
-              <ImageGallery />
+
+              {/* Search and Filter Bar */}
+              <SearchBar />
+
+              {/* Image Gallery with Search Parameters */}
+              <ImageGallery
+                page={page}
+                searchQuery={searchQuery}
+                selectedLabel={selectedLabel}
+              />
             </section>
           </div>
         </main>

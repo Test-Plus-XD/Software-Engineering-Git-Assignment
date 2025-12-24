@@ -11,6 +11,9 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import ChatBox from '../ChatBox';
 
+// Mock scrollIntoView
+Element.prototype.scrollIntoView = jest.fn();
+
 // Mock the Gemini AI utility
 jest.mock('../../../lib/ai/gemini', () => ({
     generateText: jest.fn()
@@ -141,9 +144,14 @@ describe('ChatBox Component', () => {
     describe('AI Response Handling', () => {
         test('should display AI responses in real-time', async () => {
             const user = userEvent.setup();
-            const mockResponse = 'This is an AI response';
 
-            generateText.mockResolvedValueOnce(mockResponse);
+            // Create a delayed promise to simulate API call
+            let resolveResponse;
+            const delayedPromise = new Promise(resolve => {
+                resolveResponse = resolve;
+            });
+
+            generateText.mockReturnValueOnce(delayedPromise);
 
             render(<ChatBox />);
 
@@ -158,9 +166,12 @@ describe('ChatBox Component', () => {
                 expect(screen.getByText(/ai is typing/i)).toBeInTheDocument();
             });
 
+            // Resolve the response
+            resolveResponse('This is an AI response');
+
             // Should show AI response
             await waitFor(() => {
-                expect(screen.getByText(mockResponse)).toBeInTheDocument();
+                expect(screen.getByText('This is an AI response')).toBeInTheDocument();
                 expect(screen.queryByText(/ai is typing/i)).not.toBeInTheDocument();
             });
         });
@@ -317,9 +328,8 @@ describe('ChatBox Component', () => {
                 });
             }
 
-            // Verify that the chat container scrolls to bottom
-            const chatContainer = screen.getByTestId('chat-messages');
-            expect(chatContainer.scrollTop).toBe(chatContainer.scrollHeight - chatContainer.clientHeight);
+            // Verify that scrollIntoView was called
+            expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
         });
     });
 });

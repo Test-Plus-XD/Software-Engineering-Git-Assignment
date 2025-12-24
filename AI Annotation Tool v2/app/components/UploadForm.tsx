@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { apiClient, NetworkError } from '../../lib/utils/network-error-handler'
 import { dataOperations } from '../../lib/utils/data-sync'
+import { useAuth } from '../contexts/AuthContext'
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
 
@@ -38,6 +39,7 @@ export default function UploadForm({
     allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
     className = ''
 }: UploadFormProps) {
+    const { user } = useAuth()
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle')
@@ -292,7 +294,11 @@ export default function UploadForm({
             }
 
             // Use API client with built-in error handling
-            const result = await apiClient.post('/api/images', formData)
+            const result = await apiClient.post('/api/images', formData, {
+                headers: {
+                    'x-user-email': user?.email || 'anonymous'
+                }
+            })
 
             if (result.success) {
                 setUploadStatus('success')

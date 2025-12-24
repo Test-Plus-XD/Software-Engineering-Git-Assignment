@@ -39,6 +39,13 @@ async function updateAnnotationConfidence(imageId, labelId, confidence, userEmai
                 WHERE image_id = ? AND label_id = ?
             `, [confidence, userEmail, imageId, labelId]);
 
+            // Also update the image's last_edited_by field
+            run(`
+                UPDATE images
+                SET last_edited_by = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE image_id = ?
+            `, [userEmail, imageId]);
+
             // Return updated annotation
             return queryOne(`
                 SELECT * FROM annotations
@@ -115,6 +122,13 @@ async function createAnnotation(imageId, labelId, confidence = 1.0, userEmail = 
                 INSERT INTO annotations (image_id, label_id, confidence, created_by)
                 VALUES (?, ?, ?, ?)
             `, [imageId, labelId, confidence, userEmail]);
+
+            // Also update the image's last_edited_by field
+            run(`
+                UPDATE images
+                SET last_edited_by = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE image_id = ?
+            `, [userEmail, imageId]);
 
             // Get the created annotation
             return queryOne(`

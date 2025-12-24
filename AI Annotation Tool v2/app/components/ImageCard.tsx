@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { dataOperations } from '../../lib/utils/data-sync'
+import { useAuth } from '../contexts/AuthContext'
 
 interface ImageData {
     image_id: number
@@ -34,6 +35,7 @@ interface ImageCardProps {
  * Enhanced with gradient hover, zoom popup, and label editing
  */
 export default function ImageCard({ image, onLabelClick, onImageDelete, className = '' }: ImageCardProps) {
+    const { user } = useAuth()
     const [isLoading, setIsLoading] = useState(true)
     const [hasError, setHasError] = useState(false)
     const [showDetails, setShowDetails] = useState(false)
@@ -153,6 +155,7 @@ export default function ImageCard({ image, onLabelClick, onImageDelete, classNam
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-user-email': user?.email || 'anonymous'
                 },
                 body: JSON.stringify({
                     imageId: image.image_id,
@@ -186,6 +189,7 @@ export default function ImageCard({ image, onLabelClick, onImageDelete, classNam
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
+                        'x-user-email': user?.email || 'anonymous'
                     },
                     body: JSON.stringify({
                         imageId: image.image_id,
@@ -221,6 +225,7 @@ export default function ImageCard({ image, onLabelClick, onImageDelete, classNam
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-user-email': user?.email || 'anonymous'
                 },
                 body: JSON.stringify({
                     imageId: image.image_id,
@@ -494,20 +499,20 @@ export default function ImageCard({ image, onLabelClick, onImageDelete, classNam
                     {/* Creator and Editor Information Section */}
                     <div data-testid="creator-editor-info" className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                            <div data-testid="creator-info" className="flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                <span>Created by: {image.created_by || 'Unknown'}</span>
-                            </div>
                             {image.last_edited_by && image.last_edited_by !== image.created_by && (
-                                <div className="flex items-center gap-1">
+                                <div data-testid="editor-info" className="flex items-center gap-1">
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                     <span>Last edited by: {image.last_edited_by}</span>
                                 </div>
                             )}
+                            <div data-testid="creator-info" className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span>Created by: {image.created_by || 'Unknown'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

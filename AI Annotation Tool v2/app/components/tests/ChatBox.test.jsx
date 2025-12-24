@@ -332,4 +332,49 @@ describe('ChatBox Component', () => {
             expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
         });
     });
+
+    describe('Authentication Guard', () => {
+        test('should only render ChatBox for authenticated users', () => {
+            // Mock unauthenticated user
+            const mockUnauthenticatedContext = {
+                user: null,
+                loading: false
+            };
+
+            jest.doMock('../../contexts/AuthContext', () => ({
+                useAuth: () => mockUnauthenticatedContext
+            }));
+
+            // This test should fail because authentication guard is not implemented
+            render(<ChatBox />);
+
+            expect(screen.queryByText(/chat with ai/i)).not.toBeInTheDocument();
+            expect(screen.getByText(/please sign in/i)).toBeInTheDocument();
+        });
+
+        test('should show login prompt for unauthenticated users', () => {
+            // Mock unauthenticated user
+            const mockUnauthenticatedContext = {
+                user: null,
+                loading: false
+            };
+
+            jest.doMock('../../contexts/AuthContext', () => ({
+                useAuth: () => mockUnauthenticatedContext
+            }));
+
+            // This test should fail because login prompt is not implemented
+            render(<ChatBox />);
+
+            expect(screen.getByText(/please sign in to access the chatbot/i)).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+        });
+
+        test('should display user\'s display name in chat header', () => {
+            // This test should pass as it's already implemented
+            render(<ChatBox />);
+
+            expect(screen.getByText(/welcome, test user/i)).toBeInTheDocument();
+        });
+    });
 });

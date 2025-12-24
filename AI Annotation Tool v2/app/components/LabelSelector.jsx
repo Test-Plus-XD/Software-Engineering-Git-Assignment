@@ -208,20 +208,20 @@ export default function LabelSelector({
                         <div
                             key={label}
                             data-testid={`selected-label-${label}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm min-h-[44px] touch-manipulation"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-md text-sm min-h-[44px] touch-manipulation"
                         >
                             <span>{label}</span>
                             <button
                                 data-testid={`remove-label-${label}`}
                                 onClick={() => handleLabelRemove(label)}
-                                className="ml-1 text-blue-600 hover:text-blue-800 active:text-blue-900 focus:outline-none min-w-[44px] min-h-[44px] touch-manipulation transition-colors"
+                                className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 active:text-blue-900 dark:active:text-blue-200 focus:outline-none min-w-[44px] min-h-[44px] touch-manipulation transition-colors"
                                 aria-label={`Remove ${label}`}
                             >
                                 ×
                             </button>
                         </div>
                     ))}
-                    <div className="text-sm text-gray-500 self-center">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 self-center">
                         {selectedLabels.length} selected
                     </div>
                 </div>
@@ -230,7 +230,7 @@ export default function LabelSelector({
             {/* Dropdown Trigger */}
             <div
                 data-testid="label-selector-dropdown"
-                className="relative border border-gray-300 rounded-md px-3 py-2 cursor-pointer bg-white hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 min-h-[44px] touch-manipulation active:ring-2 active:ring-blue-300 transition-colors"
+                className="relative border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 cursor-pointer bg-white dark:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-500 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 min-h-[44px] touch-manipulation active:ring-2 active:ring-blue-300 dark:active:ring-blue-500 transition-colors"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <input
@@ -241,12 +241,12 @@ export default function LabelSelector({
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={selectedLabels.length === 0 ? placeholder : 'Search labels...'}
-                    className="w-full outline-none bg-transparent min-h-[44px] text-base md:text-sm touch-manipulation"
+                    className="w-full outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 min-h-[44px] text-base md:text-sm touch-manipulation"
                     onClick={(e) => e.stopPropagation()}
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
                     <svg
-                        className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -258,28 +258,28 @@ export default function LabelSelector({
 
             {/* Warning Message */}
             {warningMessage && (
-                <div className="mt-1 text-sm text-red-600">
+                <div className="mt-1 text-sm text-red-600 dark:text-red-400">
                     {warningMessage}
                 </div>
             )}
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {isLoading ? (
-                        <div className="px-3 py-2 text-gray-500">Loading labels...</div>
+                        <div className="px-3 py-2 text-gray-500 dark:text-gray-400">Loading labels...</div>
                     ) : error ? (
-                        <div className="px-3 py-2 text-red-600">{error}</div>
+                        <div className="px-3 py-2 text-red-600 dark:text-red-400">{error}</div>
                     ) : filteredOptions.length === 0 ? (
-                        <div className="px-3 py-2 text-gray-500">No labels found</div>
+                        <div className="px-3 py-2 text-gray-500 dark:text-gray-400">No labels found</div>
                     ) : (
                         filteredOptions.map((option, index) => (
                             <div
                                 key={option.type === 'create' ? `create-${option.label}` : option.label_id}
                                 data-testid={index === highlightedIndex ? 'highlighted-option' : undefined}
                                 className={`px-3 py-2 cursor-pointer flex items-center justify-between min-h-[44px] touch-manipulation transition-colors ${index === highlightedIndex
-                                    ? 'bg-blue-50 text-blue-900'
-                                    : 'hover:bg-gray-50 active:bg-gray-100'
+                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300'
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 text-gray-900 dark:text-white'
                                     } ${selectedLabels.includes(option.label_name || option.label)
                                         ? 'opacity-50'
                                         : ''
@@ -294,13 +294,13 @@ export default function LabelSelector({
                             >
                                 <span>
                                     {option.type === 'create' ? (
-                                        <span className="text-green-600">Create "{option.label}"</span>
+                                        <span className="text-green-600 dark:text-green-400">Create "{option.label}"</span>
                                     ) : (
                                         option.label_name
                                     )}
                                 </span>
                                 {option.type === 'existing' && (
-                                    <span className="text-gray-400 text-sm">({option.usage_count})</span>
+                                    <span className="text-gray-400 dark:text-gray-500 text-sm">({option.usage_count})</span>
                                 )}
                             </div>
                         ))

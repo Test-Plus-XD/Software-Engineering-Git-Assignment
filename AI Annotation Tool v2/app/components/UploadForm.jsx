@@ -305,10 +305,10 @@ export default function UploadForm({
                 data-testid="drop-zone"
                 className={`
                     border-2 border-dashed rounded-lg p-8 text-center transition-colors touch-manipulation
-                    ${isDragOver && browserSupport.dragDrop ? 'border-blue-500 bg-blue-50 drag-over' : 'border-gray-300'}
-                    ${hasValidFile ? 'border-green-500 bg-green-50' : ''}
-                    ${validationError ? 'border-red-500 bg-red-50' : ''}
-                    ${!browserSupport.fileApi ? 'opacity-50 cursor-not-allowed' : 'active:bg-blue-100'}
+                    ${isDragOver && browserSupport.dragDrop ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 drag-over' : 'border-gray-300 dark:border-gray-600'}
+                    ${hasValidFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''}
+                    ${validationError ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : ''}
+                    ${!browserSupport.fileApi ? 'opacity-50 cursor-not-allowed' : 'active:bg-blue-100 dark:active:bg-blue-900/30'}
                 `}
                 onDragEnter={browserSupport.dragDrop ? handleDragEnter : undefined}
                 onDragLeave={browserSupport.dragDrop ? handleDragLeave : undefined}
@@ -318,14 +318,14 @@ export default function UploadForm({
                 {!selectedFile ? (
                     <div>
                         <div className="mb-4">
-                            <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </div>
-                        <p className="text-lg font-medium text-gray-900 mb-2">
+                        <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                             {browserSupport.dragDrop ? 'Drag and drop your image here' : 'Choose your image file'}
                         </p>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                             {browserSupport.dragDrop ? 'or click to choose a file' : 'Click the button below to select a file'}
                         </p>
                         <input
@@ -344,19 +344,19 @@ export default function UploadForm({
                             className={`
                                 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md min-h-[44px] min-w-[44px] touch-manipulation
                                 ${browserSupport.fileApi
-                                    ? 'text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors'
-                                    : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                                    ? 'text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors'
+                                    : 'text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
                                 }
                             `}
                         >
                             {browserSupport.fileApi ? 'Choose File' : 'Browser Not Supported'}
                         </button>
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                             Supported formats: JPEG, PNG, GIF, WebP (max {(maxFileSize / 1000000).toFixed(1)} MB)
                             {!browserSupport.dragDrop && (
                                 <>
                                     <br />
-                                    <span className="text-amber-600">Note: Drag & drop not supported in this browser</span>
+                                    <span className="text-amber-600 dark:text-amber-400">Note: Drag & drop not supported in this browser</span>
                                 </>
                             )}
                         </p>
@@ -364,11 +364,11 @@ export default function UploadForm({
                 ) : (
                     <div data-testid="file-preview" className="text-left">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-medium text-gray-900">Selected File</h3>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Selected File</h3>
                             <button
                                 type="button"
                                 onClick={handleRemoveFile}
-                                className="text-red-600 hover:text-red-800 focus:outline-none"
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 focus:outline-none"
                                 aria-label="Remove file"
                             >
                                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,9 +376,9 @@ export default function UploadForm({
                                 </svg>
                             </button>
                         </div>
-                        <div className="bg-white p-4 rounded border">
-                            <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                            <p className="text-sm text-gray-500">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-600">
+                            <p className="font-medium text-gray-900 dark:text-white">{selectedFile.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                                 {getFileTypeDisplay(selectedFile.type)} • {formatFileSize(selectedFile.size)}
                             </p>
                         </div>
@@ -388,8 +388,8 @@ export default function UploadForm({
 
             {/* Validation Error */}
             {validationError && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-sm text-red-800">{validationError}</p>
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <p className="text-sm text-red-800 dark:text-red-300">{validationError}</p>
                 </div>
             )}
 
@@ -397,12 +397,12 @@ export default function UploadForm({
             {isUploading && (
                 <div data-testid="upload-progress" className="mt-4">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">Uploading...</span>
-                        <span className="text-sm text-gray-500">In progress</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Uploading...</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">In progress</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
                             style={{ width: '50%' }} // Simplified progress for now
                             role="progressbar"
                             aria-valuenow={50}
@@ -415,15 +415,15 @@ export default function UploadForm({
 
             {/* Success Message */}
             {uploadStatus === 'success' && successMessage && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-sm text-green-800">{successMessage}</p>
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <p className="text-sm text-green-800 dark:text-green-300">{successMessage}</p>
                 </div>
             )}
 
             {/* Error Message */}
             {uploadStatus === 'error' && errorMessage && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-sm text-red-800">Upload failed: {errorMessage}</p>
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <p className="text-sm text-red-800 dark:text-red-300">Upload failed: {errorMessage}</p>
                 </div>
             )}
 
@@ -437,8 +437,8 @@ export default function UploadForm({
                         className={`
                             flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md min-h-[44px] touch-manipulation
                             ${canUpload
-                                ? 'text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors'
-                                : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                                ? 'text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors'
+                                : 'text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
                             }
                         `}
                     >
@@ -458,7 +458,7 @@ export default function UploadForm({
                     <button
                         type="button"
                         onClick={handleRetry}
-                        className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 min-h-[44px] touch-manipulation transition-colors"
+                        className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 active:bg-red-800 dark:active:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-red-400 min-h-[44px] touch-manipulation transition-colors"
                     >
                         Try Again
                     </button>
@@ -468,7 +468,7 @@ export default function UploadForm({
                     <button
                         type="button"
                         onClick={handleRemoveFile}
-                        className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 min-h-[44px] touch-manipulation transition-colors"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 min-h-[44px] touch-manipulation transition-colors"
                     >
                         Clear
                     </button>
@@ -477,7 +477,7 @@ export default function UploadForm({
 
             {/* File Selection Count */}
             {selectedFile && (
-                <p className="mt-2 text-sm text-gray-500 text-center">
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-center">
                     1 file selected
                 </p>
             )}

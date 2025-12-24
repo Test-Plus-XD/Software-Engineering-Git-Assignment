@@ -55,19 +55,15 @@ async function generateText(prompt) {
         }
 
         // Validate response format
-        if (typeof responseData.success === 'undefined') {
+        if (typeof responseData.result === 'undefined') {
             throw new Error('Invalid API response format');
         }
 
-        if (!responseData.success) {
-            throw new Error(responseData.error || 'AI generation failed');
-        }
-
-        if (typeof responseData.response !== 'string') {
+        if (typeof responseData.result !== 'string') {
             throw new Error('Invalid API response format');
         }
 
-        return responseData.response;
+        return responseData.result;
     } catch (error) {
         // Handle network errors
         if (error.message.includes('fetch') || error.message.includes('Network connection failed') || error.name === 'TypeError') {

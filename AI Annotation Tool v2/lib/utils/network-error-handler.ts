@@ -226,10 +226,7 @@ export class APIClient {
     constructor(baseURL = '', defaultOptions: APIClientOptions = {}) {
         this.baseURL = baseURL
         this.defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...defaultOptions.headers
-            },
+            // Don't set default Content-Type header - let each request handle it
             ...defaultOptions
         }
     }
@@ -240,8 +237,8 @@ export class APIClient {
             ...this.defaultOptions,
             ...options,
             headers: {
-                ...this.defaultOptions.headers,
-                ...options.headers
+                ...(this.defaultOptions.headers || {}),
+                ...(options.headers || {})
             }
         }
 
@@ -281,9 +278,12 @@ export class APIClient {
 
     async post(endpoint: string, data: any, options: APIClientOptions = {}): Promise<any> {
         const body = data instanceof FormData ? data : JSON.stringify(data)
+
+        // For FormData, don't set any Content-Type header - let the browser handle it
+        // For JSON, set the Content-Type header
         const headers = data instanceof FormData
-            ? { ...options.headers } // Don't set Content-Type for FormData
-            : { 'Content-Type': 'application/json', ...options.headers }
+            ? { ...(options.headers || {}) } // No Content-Type for FormData
+            : { 'Content-Type': 'application/json', ...(options.headers || {}) }
 
         return this.request(endpoint, {
             ...options,

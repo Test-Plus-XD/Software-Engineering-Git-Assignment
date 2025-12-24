@@ -157,19 +157,18 @@ export async function POST(request) {
 
       // Parse labels if provided
       let labels = [];
-      if (labelsJson && labelsJson.trim() !== '') {
+      if (labelsJson && labelsJson.toString().trim() !== '' && labelsJson.toString().trim() !== 'undefined' && labelsJson.toString().trim() !== 'null') {
         try {
-          labels = JSON.parse(labelsJson);
+          const labelsString = labelsJson.toString().trim();
+          labels = JSON.parse(labelsString);
           // Ensure labels is an array
           if (!Array.isArray(labels)) {
             labels = [];
           }
         } catch (error) {
           console.error('Labels JSON parsing error:', error);
-          return NextResponse.json(
-            { success: false, error: 'Invalid labels format. Expected valid JSON array.' },
-            { status: 400 }
-          );
+          // Don't fail the upload for invalid labels, just use empty array
+          labels = [];
         }
       }
 

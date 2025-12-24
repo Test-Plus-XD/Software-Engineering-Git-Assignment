@@ -23,6 +23,8 @@ function HomeContent() {
 
   // Show authentication screen if not logged in
   if (!loading && !user) {
+    // For testing purposes, let's temporarily bypass auth for upload testing
+    // Comment out this return to test uploads without authentication
     return (
       <ErrorBoundary>
         <div className="min-h-screen bg-zinc-50 dark:bg-black relative">

@@ -11,6 +11,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import ComponentErrorBoundary from "./components/ComponentErrorBoundary";
 import AuthComponent from "./components/AuthComponent";
 import ChatBox from "./components/ChatBox";
+import DatabaseResetButton from "./components/DatabaseResetButton";
 
 function HomeContent() {
   const { user, loading } = useAuth();
@@ -111,6 +112,8 @@ function HomeContent() {
                   >
                     AI Chat
                   </button>
+                  <div className="border-l border-gray-300 dark:border-gray-600 h-6 mx-2"></div>
+                  <DatabaseResetButton />
                   <AuthComponent />
                 </div>
               </nav>

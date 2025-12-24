@@ -157,12 +157,17 @@ export async function POST(request) {
 
       // Parse labels if provided
       let labels = [];
-      if (labelsJson) {
+      if (labelsJson && labelsJson.trim() !== '') {
         try {
           labels = JSON.parse(labelsJson);
+          // Ensure labels is an array
+          if (!Array.isArray(labels)) {
+            labels = [];
+          }
         } catch (error) {
+          console.error('Labels JSON parsing error:', error);
           return NextResponse.json(
-            { success: false, error: 'Invalid labels format' },
+            { success: false, error: 'Invalid labels format. Expected valid JSON array.' },
             { status: 400 }
           );
         }
@@ -271,44 +276,46 @@ export async function POST(request) {
     }
 
     // Handle JSON for direct database creation (legacy support)
-    const { filename, original_name, file_path, file_size, mime_type } = await request.json();
+    else {
+      const { filename, original_name, file_path, file_size, mime_type } = await request.json();
 
-    // Validate required fields
-    if (!filename || !original_name || !file_path || !file_size || !mime_type) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
+      // Validate required fields
+      if (!filename || !original_name || !file_path || !file_size || !mime_type) {
+        return NextResponse.json(
+          { success: false, error: 'Missing required fields' },
+          { status: 400 }
+        );
+      }
 
-    db = getDatabase();
+      db = getDatabase();
 
-    // Create image record
-    const stmt = db.prepare(`
+      // Create image record
+      const stmt = db.prepare(`
       INSERT INTO images (filename, original_name, file_path, file_size, mime_type)
       VALUES (?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(filename, original_name, file_path, file_size, mime_type);
+      const result = stmt.run(filename, original_name, file_path, file_size, mime_type);
 
-    const newImage = {
-      id: result.lastInsertRowid,
-      image_id: result.lastInsertRowid,
-      filename,
-      original_name,
-      file_path,
-      file_size,
-      mime_type,
-      uploaded_at: new Date().toISOString(),
-      labels: [],
-      confidences: [],
-      label_count: 0
-    };
+      const newImage = {
+        id: result.lastInsertRowid,
+        image_id: result.lastInsertRowid,
+        filename,
+        original_name,
+        file_path,
+        file_size,
+        mime_type,
+        uploaded_at: new Date().toISOString(),
+        labels: [],
+        confidences: [],
+        label_count: 0
+      };
 
-    return NextResponse.json({
-      success: true,
-      data: newImage
-    }, { status: 201 });
+      return NextResponse.json({
+        success: true,
+        data: newImage
+      }, { status: 201 });
+    }
   } catch (error) {
     console.error('Error creating image:', error);
     return NextResponse.json(
